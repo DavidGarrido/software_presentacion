@@ -1,0 +1,25 @@
+# Grabaciones de video y audio
+grabaciones/
+*.mkv
+*.mp4
+*.webm
+*.opus
+
+# Estado del servidor
+estado_grabacion.json
+
+# ngrok y celular (se regeneran con iniciar.sh)
+celular.html
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+*.desktop
