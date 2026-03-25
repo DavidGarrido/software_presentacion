@@ -124,6 +124,9 @@
 </head>
 <body>
 <div id="root"></div>
+<div id="camWrap" style="display:none;width:0;height:0;overflow:hidden;">
+    <video id="camFeed" autoplay muted playsinline style="display:block;width:0;height:0;"></video>
+</div>
 
 <script>
     // ── Estado ───────────────────────────────────────────────────────────────
@@ -220,6 +223,85 @@
     function nextSlide()    { renderSlide(currentIndex + 1); }
     function prevSlide()    { renderSlide(currentIndex - 1); }
 
+    // ── Cámara overlay ───────────────────────────────────────────────────────
+    let camStream = null;
+    let camDragging = false, camDragOx = 0, camDragOy = 0;
+
+    const camWrap = document.getElementById('camWrap');
+    const camFeed = document.getElementById('camFeed');
+
+    function camSizeMap(size, shape) {
+        const w = Math.round(window.innerWidth * (parseInt(size) / 100));
+        const h = shape === 'circle' ? w : Math.round(w * 9 / 16);
+        return { w, h };
+    }
+
+    function camPosToXY(pos, w, h) {
+        const pad = Math.round(window.innerWidth * 0.018);
+        const vw  = window.innerWidth, vh = window.innerHeight;
+        if (pos === 'tl')     return { x: pad,        y: pad };
+        if (pos === 'tr')     return { x: vw - w - pad, y: pad };
+        if (pos === 'bl')     return { x: pad,        y: vh - h - pad };
+        if (pos === 'center') return { x: (vw - w) / 2, y: (vh - h) / 2 };
+        if (pos === 'full')   return { x: 0,           y: 0 };
+        return { x: vw - w - pad, y: vh - h - pad }; // br
+    }
+
+    function applyCamConfig(cfg) {
+        const isFull = cfg.pos === 'full';
+        let { w, h } = isFull
+            ? { w: window.innerWidth, h: window.innerHeight }
+            : camSizeMap(cfg.size, cfg.shape);
+        const { x, y } = camPosToXY(cfg.pos, w, h);
+        const r   = isFull ? '0' : cfg.shape === 'circle' ? '50%' : Math.round(w * 0.06) + 'px';
+        const bdr = isFull ? 'none' : '2px solid rgba(255,255,255,0.55)';
+        const shd = isFull ? 'none' : '0 4px 24px rgba(0,0,0,0.55)';
+        camWrap.style.cssText = `
+            position:fixed; z-index:50; cursor:move; user-select:none;
+            width:${w}px; height:${h}px; left:${x}px; top:${y}px;
+            border-radius:${r}; overflow:hidden;
+            border:${bdr}; box-shadow:${shd};
+        `;
+        camFeed.style.cssText = `
+            width:${w}px; height:${h}px; object-fit:cover; display:block;
+            transform:scaleX(${cfg.mirror ? -1 : 1});
+        `;
+    }
+
+    async function startCamOverlay(cfg) {
+        if (!camStream) {
+            try {
+                camStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:false });
+                camFeed.srcObject = camStream;
+            } catch(e) { return; }
+        }
+        // Aplicar dimensiones ANTES de mostrar para evitar frame sin tamaño
+        applyCamConfig(cfg);
+        camWrap.style.display = 'block';
+        // No mostrar a las miniaturas (iframes anidados dentro de iframes)
+        if (window.parent !== window.top) { camWrap.style.display = 'none'; }
+    }
+
+    function stopCamOverlay() {
+        camWrap.style.display = 'none';
+        if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+        camFeed.srcObject = null;
+    }
+
+    // Drag
+    camWrap.addEventListener('pointerdown', e => {
+        camDragging = true;
+        camDragOx = e.clientX - camWrap.offsetLeft;
+        camDragOy = e.clientY - camWrap.offsetTop;
+        camWrap.setPointerCapture(e.pointerId);
+    });
+    camWrap.addEventListener('pointermove', e => {
+        if (!camDragging) return;
+        camWrap.style.left = (e.clientX - camDragOx) + 'px';
+        camWrap.style.top  = (e.clientY - camDragOy) + 'px';
+    });
+    camWrap.addEventListener('pointerup', () => { camDragging = false; });
+
     // ── Recibir mensajes del presentador ─────────────────────────────────────
     window.addEventListener('message', e => {
         const d = e.data;
@@ -231,6 +313,10 @@
         if (d.action === 'goto')  renderSlide(d.index);
         if (d.action === 'next')  nextSlide();
         if (d.action === 'prev')  prevSlide();
+        if (d.action === 'camera') {
+            if (d.enabled) startCamOverlay(d);
+            else           stopCamOverlay();
+        }
     });
 
     // ── Teclado (cuando está en foco / pantalla completa) ────────────────────

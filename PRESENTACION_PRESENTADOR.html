@@ -165,6 +165,17 @@
         }
         .pear-btn:hover { background:#2a2a40; color:white; }
 
+        /* Cámara */
+        .cam-pos-btn, .cam-opt-btn {
+            flex:1; padding:5px 3px; border:1px solid #2a2a40; border-radius:5px;
+            background:#0d0d1a; color:#666; font-size:0.7rem; cursor:pointer; transition:all 0.15s;
+        }
+        .cam-pos-btn:hover, .cam-opt-btn:hover { background:#1a1a30; color:#ddd; }
+        .cam-pos-btn.active, .cam-opt-btn.active { background:#00d4ff15; border-color:#00d4ff; color:#00d4ff; }
+        #camPreview { border-radius:8px; overflow:hidden; background:#000; position:relative; }
+        #camPreview video { width:100%; aspect-ratio:16/9; display:block; object-fit:cover; }
+        #camMirrorBtn.active { background:#00d4ff15; border-color:#00d4ff; color:#00d4ff; }
+
         /* ── Modales ── */
         .modal-overlay {
             position:fixed; inset:0; background:rgba(0,0,0,0.75);
@@ -379,6 +390,46 @@
                     <button class="obs-btn obs-record" id="obsRecBtn" onclick="obsToggleRec()">⏺ Iniciar</button>
                     <button class="obs-btn obs-stop" id="obsStopBtn" onclick="obsStopRec()" disabled>⏹ Detener</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Cámara -->
+        <div class="panel-section">
+            <div class="section-title">📷 Cámara <span style="color:#555;font-size:0.7rem;font-weight:400;">(opcional)</span></div>
+
+            <div class="mic-row" style="margin-bottom:6px;">
+                <div class="mic-dot" id="camDot"></div>
+                <span id="camLabel" style="flex:1;font-size:0.75rem;">No activa</span>
+                <button class="mic-toggle" id="camToggle" onclick="toggleCamera()">Activar</button>
+            </div>
+
+            <div id="camPreview" style="display:none;margin-bottom:7px;">
+                <video id="camVideo" autoplay muted playsinline></video>
+            </div>
+
+            <!-- Posición: grid 3x2 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:5px;">
+                <button class="cam-pos-btn" data-pos="tl"     onclick="setCamPos('tl')">↖</button>
+                <button class="cam-pos-btn" data-pos="center" onclick="setCamPos('center')">⊙ Centro</button>
+                <button class="cam-pos-btn" data-pos="tr"     onclick="setCamPos('tr')">↗</button>
+                <button class="cam-pos-btn" data-pos="bl"     onclick="setCamPos('bl')">↙</button>
+                <button class="cam-pos-btn" data-pos="full"   onclick="setCamPos('full')">⛶ Pantalla</button>
+                <button class="cam-pos-btn active" data-pos="br" onclick="setCamPos('br')">↘</button>
+            </div>
+
+            <!-- Forma -->
+            <div style="display:flex;gap:3px;margin-bottom:4px;">
+                <button class="cam-opt-btn active" data-shape="rect"   onclick="setCamShape('rect')">▭ Rect</button>
+                <button class="cam-opt-btn"        data-shape="circle" onclick="setCamShape('circle')">◉ Círculo</button>
+                <button class="cam-opt-btn active" id="camMirrorBtn"   onclick="toggleCamMirror()">⇔ Espejo</button>
+            </div>
+
+            <!-- Tamaño -->
+            <div style="display:flex;align-items:center;gap:7px;">
+                <input type="range" id="camSizeRange" min="10" max="60" value="22"
+                    style="flex:1;accent-color:#00d4ff;cursor:pointer;"
+                    oninput="setCamSize(this.value)">
+                <span id="camSizeLabel" style="font-size:0.72rem;color:#aaa;width:30px;text-align:right;">22%</span>
             </div>
         </div>
 
@@ -624,11 +675,17 @@ document.addEventListener('keydown', e => {
 function abrirProyector() {
     if (!currentPres) { alert('Carga una presentación primero.'); return; }
     projectorWin = window.open('viewer.html', 'proyector', 'width=1280,height=720');
-    projectorWin.addEventListener('load', () => {
+
+    const sendAll = () => {
         projectorWin.postMessage({ action:'load', slides:currentPres.slides, index:currentIndex }, '*');
-    });
-    // fallback con timeout
-    setTimeout(() => sendToViewers({ action:'load', slides:currentPres.slides, index:currentIndex }), 1200);
+        if (cameraEnabled && cameraStream) {
+            projectorWin.postMessage({ action:'camera', enabled:true, pos:camPos, shape:camShape, size:camSize, mirror:camMirror }, '*');
+        }
+    };
+
+    projectorWin.addEventListener('load', sendAll);
+    // fallback — el evento load a veces no dispara en ventanas cross-origin
+    setTimeout(sendAll, 1200);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1061,6 +1118,123 @@ async function onImportJSON(e) {
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ═══════════════════════════════════════════════════════════════════
+// Cámara
+// ═══════════════════════════════════════════════════════════════════
+let cameraStream  = null;
+let cameraEnabled = false;
+let camPos        = 'br';
+let camShape      = 'rect';
+let camSize       = 22;   // porcentaje del ancho
+let camMirror     = true;
+
+async function toggleCamera() {
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+        cameraStream  = null;
+        cameraEnabled = false;
+        document.getElementById('camDot').classList.remove('active');
+        document.getElementById('camLabel').textContent  = 'No activa';
+        document.getElementById('camToggle').textContent = 'Activar';
+        document.getElementById('camPreview').style.display = 'none';
+        document.getElementById('camVideo').srcObject = null;
+        sendToViewers({ action:'camera', enabled:false });
+    } else {
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:false });
+            cameraEnabled = true;
+            document.getElementById('camDot').classList.add('active');
+            document.getElementById('camLabel').textContent  = 'Cámara activa ✓';
+            document.getElementById('camToggle').textContent = 'Desactivar';
+            const vid = document.getElementById('camVideo');
+            vid.srcObject = cameraStream;
+            document.getElementById('camPreview').style.display = 'block';
+            sendCamConfig();
+        } catch(err) {
+            alert('No se pudo acceder a la cámara: ' + err.message);
+        }
+    }
+}
+
+function sendCamConfig() {
+    const msg = { action:'camera', enabled:cameraEnabled, pos:camPos, shape:camShape, size:camSize, mirror:camMirror };
+    // Al preview central
+    try { document.getElementById('slideFrame').contentWindow.postMessage(msg, '*'); } catch(e){}
+    // Al proyector
+    if (projectorWin && !projectorWin.closed) projectorWin.postMessage(msg, '*');
+}
+
+function setCamPos(pos) {
+    camPos = pos;
+    document.querySelectorAll('.cam-pos-btn').forEach(b => b.classList.toggle('active', b.dataset.pos === pos));
+    sendCamConfig();
+}
+function setCamShape(shape) {
+    camShape = shape;
+    document.querySelectorAll('[data-shape]').forEach(b => b.classList.toggle('active', b.dataset.shape === shape));
+    sendCamConfig();
+}
+function setCamSize(val) {
+    camSize = parseInt(val);
+    document.getElementById('camSizeLabel').textContent = camSize + '%';
+    sendCamConfig();
+}
+function toggleCamMirror() {
+    camMirror = !camMirror;
+    document.getElementById('camMirrorBtn').classList.toggle('active', camMirror);
+    sendCamConfig();
+}
+
+function drawCameraOverlay(ctx, w, h, camVid) {
+    const camW = Math.round(w * (camSize / 100));
+    const camH = camShape === 'circle' ? camW : Math.round(camW * 9 / 16);
+    const pad  = Math.round(w * 0.018);
+
+    // Pantalla completa: sobreescribir dimensiones y posición
+    if (camPos === 'full') { camW = w; camH = h; }
+
+    let x, y;
+    if      (camPos === 'tl')     { x = pad;               y = pad; }
+    else if (camPos === 'tr')     { x = w - camW - pad;    y = pad; }
+    else if (camPos === 'bl')     { x = pad;               y = h - camH - pad; }
+    else if (camPos === 'center') { x = (w - camW) / 2;    y = (h - camH) / 2; }
+    else if (camPos === 'full')   { x = 0;                  y = 0; }
+    else                          { x = w - camW - pad;    y = h - camH - pad; } // br
+
+    ctx.save();
+    ctx.beginPath();
+    if (camShape === 'circle') {
+        ctx.arc(x + camW / 2, y + camW / 2, camW / 2, 0, Math.PI * 2);
+    } else {
+        const r = Math.round(camW * 0.06);
+        ctx.roundRect(x, y, camW, camH, r);
+    }
+    ctx.clip();
+
+    if (camMirror) {
+        ctx.translate(x + camW, y);
+        ctx.scale(-1, 1);
+        ctx.drawImage(camVid, 0, 0, camW, camH);
+    } else {
+        ctx.drawImage(camVid, x, y, camW, camH);
+    }
+    ctx.restore();
+
+    // Borde
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    ctx.lineWidth   = Math.max(2, Math.round(w * 0.0022));
+    ctx.beginPath();
+    if (camShape === 'circle') {
+        ctx.arc(x + camW / 2, y + camW / 2, camW / 2, 0, Math.PI * 2);
+    } else {
+        const r = Math.round(camW * 0.06);
+        ctx.roundRect(x, y, camW, camH, r);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Grabación — Modo Navegador (Opción B)
 // ═══════════════════════════════════════════════════════════════════
 let recMode          = 'browser';
@@ -1124,7 +1298,7 @@ async function browserStartRec() {
     try {
         captureStream = await navigator.mediaDevices.getDisplayMedia({
             video: { frameRate:30, displaySurface:'window' },
-            audio: true   // audio del sistema si el SO lo permite
+            audio: true
         });
     } catch(err) {
         if (err.name !== 'NotAllowedError') alert('Error al capturar pantalla: ' + err.message);
@@ -1132,44 +1306,75 @@ async function browserStartRec() {
     }
     displayStream = captureStream;
 
-    // Mezclar audio del sistema + micrófono
-    const ctx         = new AudioContext();
-    const dest        = ctx.createMediaStreamDestination();
-    const micSource   = ctx.createMediaStreamSource(micStream);
-    micSource.connect(dest);
-
+    // Audio: mezclar sistema + micrófono
+    const audioCtx = new AudioContext();
+    const dest     = audioCtx.createMediaStreamDestination();
+    audioCtx.createMediaStreamSource(micStream).connect(dest);
     const sysAudio = captureStream.getAudioTracks();
     if (sysAudio.length) {
-        const sysSource = ctx.createMediaStreamSource(new MediaStream(sysAudio));
-        sysSource.connect(dest);
+        audioCtx.createMediaStreamSource(new MediaStream(sysAudio)).connect(dest);
     }
 
-    // Stream final: video de pantalla + audio mezclado
+    // Video de pantalla en elemento <video> para el canvas
+    const screenVid = document.createElement('video');
+    screenVid.srcObject = new MediaStream(captureStream.getVideoTracks());
+    screenVid.muted = true;
+    await new Promise(r => { screenVid.onloadedmetadata = r; });
+    await screenVid.play();
+
+    // Canvas de composición al tamaño real de la captura
+    const canvas  = document.createElement('canvas');
+    canvas.width  = screenVid.videoWidth  || 1920;
+    canvas.height = screenVid.videoHeight || 1080;
+    const ctx2d   = canvas.getContext('2d');
+
+    // Elemento <video> para la cámara (si está activa)
+    let camVid = null;
+    if (cameraStream && cameraEnabled) {
+        camVid = document.createElement('video');
+        camVid.srcObject = cameraStream;
+        camVid.muted = true;
+        await new Promise(r => { camVid.onloadedmetadata = r; });
+        await camVid.play();
+    }
+
+    // Loop de composición pantalla + cámara
+    let rafId;
+    function drawFrame() {
+        ctx2d.drawImage(screenVid, 0, 0, canvas.width, canvas.height);
+        if (camVid) drawCameraOverlay(ctx2d, canvas.width, canvas.height, camVid);
+        rafId = requestAnimationFrame(drawFrame);
+    }
+    drawFrame();
+
+    // Stream final: canvas video + audio mezclado
     const finalStream = new MediaStream([
-        ...captureStream.getVideoTracks(),
+        canvas.captureStream(30).getVideoTracks()[0],
         ...dest.stream.getAudioTracks()
     ]);
 
     const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
         .find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
 
-    recChunks     = [];
-    recStartTime  = Date.now();
+    recChunks    = [];
+    recStartTime = Date.now();
     mediaRecorder = new MediaRecorder(finalStream, { mimeType });
     mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
-    mediaRecorder.onstop          = () => guardarGrabacion(mimeType, ctx);
+    mediaRecorder.onstop = () => {
+        cancelAnimationFrame(rafId);
+        screenVid.srcObject = null;
+        if (camVid) camVid.srcObject = null;
+        guardarGrabacion(mimeType, audioCtx);
+    };
     mediaRecorder.start(1000);
 
     document.getElementById('browserRecBtn').textContent = '⏺ Grabando…';
     document.getElementById('browserRecBtn').classList.add('recording');
     document.getElementById('browserStopBtn').disabled = false;
-    document.getElementById('recStatus').textContent = '🔴 Grabando';
+    document.getElementById('recStatus').textContent = cameraEnabled ? '🔴 Grabando + 📷' : '🔴 Grabando';
     document.getElementById('recStatus').className   = 'badge rec';
 
-    // Si la pantalla se detiene desde el browser, limpiar
     captureStream.getVideoTracks()[0].addEventListener('ended', () => browserStopRec());
-
-    // Notificar pear-desktop
     pearAction('previous').catch(()=>{});
     pearAction('play').catch(()=>{});
 }
