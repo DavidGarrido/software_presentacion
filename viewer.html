@@ -7,6 +7,7 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         html, body { width:100%; height:100%; overflow:hidden; background:#0d0d1a; }
+        #root { width:100%; height:100%; overflow:hidden; }
 
         .slide {
             width:100%; height:100%;
@@ -209,11 +210,55 @@
         }
 
         root.innerHTML = `
-            <div class="slide${idx === 0 && !s.layout ? ' cover' : ''}">
+            <div class="slide${idx === 0 && !s.layout ? ' cover' : ''}" style="position:relative;">
                 ${contentHTML}
                 <div class="slide-number">${idx + 1} / ${slides.length}</div>
             </div>
         `;
+
+        // Elementos adicionales (texto/imagen posicionados libremente)
+        if (s.elements && s.elements.length) {
+            const slideDiv = root.querySelector('.slide');
+            const overlay  = document.createElement('div');
+            overlay.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
+            s.elements.forEach(el => {
+                const div = document.createElement('div');
+                div.style.cssText = [
+                    `position:absolute`,
+                    `left:${el.x ?? 0}%`,
+                    `top:${el.y ?? 0}%`,
+                    `width:${el.w ?? 20}%`,
+                    `height:${el.h ?? 10}%`,
+                    `overflow:hidden`
+                ].join(';');
+                if (el.type === 'text') {
+                    Object.assign(div.style, {
+                        fontFamily: "'Segoe UI', Arial, sans-serif",
+                        color:       el.color      || '#ffffff',
+                        fontSize:    (el.fontSize  || 2.5) + 'vw',
+                        fontWeight:  el.bold       ? '700' : '400',
+                        fontStyle:   el.italic     ? 'italic' : 'normal',
+                        textAlign:   el.align      || 'left',
+                        lineHeight:  '1.3',
+                        whiteSpace:  'pre-wrap',
+                        display:     'flex',
+                        alignItems:  'flex-start',
+                        padding:     '0.3%'
+                    });
+                    div.textContent = el.content || '';
+                } else if (el.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src              = el.content || '';
+                    img.style.width      = '100%';
+                    img.style.height     = '100%';
+                    img.style.objectFit  = el.fit || 'contain';
+                    img.style.borderRadius = '4px';
+                    div.appendChild(img);
+                }
+                overlay.appendChild(div);
+            });
+            slideDiv.appendChild(overlay);
+        }
 
         // Notificar al presentador
         try { window.parent.postMessage({ action:'slideChanged', index:idx }, '*'); } catch(e){}

@@ -176,6 +176,23 @@
         #camPreview video { width:100%; aspect-ratio:16/9; display:block; object-fit:cover; }
         #camMirrorBtn.active { background:#00d4ff15; border-color:#00d4ff; color:#00d4ff; }
 
+        /* ── Elementos por slide ── */
+        .el-card {
+            background:#0a0a15; border:1px solid #1e1e35; border-radius:7px;
+            padding:8px; display:flex; flex-direction:column; gap:6px; margin-bottom:6px;
+        }
+        .el-type-btn {
+            padding:3px 9px; border:1px solid #2a2a40; border-radius:4px;
+            background:#0d0d1a; color:#666; font-size:0.7rem; cursor:pointer; transition:all 0.12s;
+        }
+        .el-type-btn.active { background:#00d4ff15; border-color:#00d4ff; color:#00d4ff; }
+        .el-num {
+            width:46px; padding:3px 5px; font-size:0.72rem;
+            background:#0d0d1a; border:1px solid #2a2a40; border-radius:4px; color:#ccc;
+            text-align:center;
+        }
+        .el-lbl { font-size:0.65rem; color:#555; }
+
         /* ── Modales ── */
         .modal-overlay {
             position:fixed; inset:0; background:rgba(0,0,0,0.75);
@@ -431,6 +448,12 @@
                     oninput="setCamSize(this.value)">
                 <span id="camSizeLabel" style="font-size:0.72rem;color:#aaa;width:30px;text-align:right;">22%</span>
             </div>
+
+            <!-- Indicador de config guardada por slide -->
+            <div id="camSlideIndicator" style="display:none;align-items:center;gap:5px;margin-top:5px;padding:4px 7px;background:#00d4ff0d;border:1px solid #00d4ff25;border-radius:5px;">
+                <span style="font-size:0.68rem;color:#00d4ff;flex:1;" id="camSlideLabel">📌 guardado en este slide</span>
+                <button onclick="clearCamFromSlide()" style="background:none;border:none;color:#555;cursor:pointer;font-size:0.75rem;padding:0;" title="Quitar config de este slide">✕</button>
+            </div>
         </div>
 
         <!-- pear-desktop -->
@@ -611,6 +634,8 @@ function updateUI() {
         el.classList.toggle('active', i === currentIndex);
         if (i === currentIndex) el.scrollIntoView({ block:'nearest' });
     });
+
+    applyCamFromSlide(currentIndex);
 }
 
 // Iconos para cada tipo de layout
@@ -751,12 +776,14 @@ function openEditorNueva() {
     openModal('modalEditor');
 }
 
-async function openEditorExistente(id) {
+async function openEditorExistente(id, startIndex) {
     const p = await dbGet('presentations', id);
     if (!p) return;
     edEditingId   = p.id;
     edSlides      = JSON.parse(JSON.stringify(p.slides || []));
-    edSelectedIdx = edSlides.length ? 0 : -1;
+    edSelectedIdx = (startIndex != null && startIndex >= 0 && startIndex < edSlides.length)
+        ? startIndex
+        : (edSlides.length ? 0 : -1);
     document.getElementById('editorTitle').textContent = 'Editar: ' + p.name;
     document.getElementById('edPresName').value = p.name;
     renderEdSlideList();
@@ -767,7 +794,7 @@ async function openEditorExistente(id) {
 
 function editarPresentacionActual() {
     if (!currentPres) return openEditorNueva();
-    openEditorExistente(currentPres.id);
+    openEditorExistente(currentPres.id, currentIndex);
 }
 
 function renderEdSlideList() {
@@ -927,10 +954,15 @@ function edShowSlideForm(idx) {
                     <label>Guión <span style="color:#555;font-size:0.68rem;">(solo para el presentador)</span></label>
                     <textarea id="efNotes" rows="3">${escHtml(s.notes||'')}</textarea>
                 </div>
+
+                <!-- Elementos adicionales -->
+                <div>
+                    <div id="edElementsSection">${edElementsHTML(idx)}</div>
+                </div>
             </div>
 
             <!-- Columna derecha: preview + color -->
-            <div style="width:240px;flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
+            <div style="width:240px;flex-shrink:0;display:flex;flex-direction:column;gap:8px;position:sticky;top:0;align-self:flex-start;">
 
                 <!-- Live preview -->
                 <div>
@@ -946,11 +978,11 @@ function edShowSlideForm(idx) {
                     <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;" id="colorSwatches">
                         ${COLOR_PRESETS.map(c => {
                             const isActive = curBg === c.value;
-                            const previewBg = c.solid ? c.value : c.value;
                             return `<button class="color-swatch${isActive?' active':''}"
-                                style="background:${previewBg}"
+                                style="background:${c.value}"
                                 title="${c.name}"
-                                onclick="edSetBg(${JSON.stringify(c.value)})"></button>`;
+                                data-bg="${c.value.replace(/"/g,'&quot;')}"
+                                onclick="edSetBg(this.dataset.bg)"></button>`;
                         }).join('')}
                     </div>
                     <div style="display:flex;gap:6px;align-items:center;">
@@ -963,6 +995,9 @@ function edShowSlideForm(idx) {
                             oninput="syncColorPicker();updateEdPreview();syncSwatches()">
                     </div>
                 </div>
+
+                <!-- Cámara por slide -->
+                <div id="edCamSection">${edCamSectionHTML(idx)}</div>
 
             </div>
         </div>
@@ -1005,11 +1040,7 @@ function syncSwatches() {
     });
     // Simplificado: comparar por onclick value
     document.querySelectorAll('#colorSwatches .color-swatch').forEach(btn => {
-        const onclick = btn.getAttribute('onclick') || '';
-        const m = onclick.match(/edSetBg\((.+)\)/);
-        if (m) {
-            try { btn.classList.toggle('active', JSON.parse(m[1]) === val); } catch(e){}
-        }
+        btn.classList.toggle('active', btn.dataset.bg === val);
     });
 }
 
@@ -1017,16 +1048,223 @@ function updateEdPreview() {
     const iframe = document.getElementById('edPreviewFrame');
     if (!iframe?.contentWindow) return;
     const slide = {
-        title:   document.getElementById('efTitle')?.value   || '',
-        content: document.getElementById('efContent')?.value || '',
-        notes:   document.getElementById('efNotes')?.value   || '',
-        layout:  document.getElementById('efLayout')?.value  || '',
-        tag:     document.getElementById('efTag')?.value     || '',
-        bg:      document.getElementById('efBg')?.value      || '#0d0d1a'
+        title:    document.getElementById('efTitle')?.value   || '',
+        content:  document.getElementById('efContent')?.value || '',
+        notes:    document.getElementById('efNotes')?.value   || '',
+        layout:   document.getElementById('efLayout')?.value  || '',
+        tag:      document.getElementById('efTag')?.value     || '',
+        bg:       document.getElementById('efBg')?.value      || '#0d0d1a',
+        elements: edSlides[edSelectedIdx]?.elements || []
     };
     try {
         iframe.contentWindow.postMessage({ action:'load', slides:[slide], index:0 }, '*');
     } catch(e) {}
+}
+
+// ── Elementos por slide ──────────────────────────────────────────────────────
+
+function edElementsHTML(idx) {
+    const s   = edSlides[idx];
+    const els = s?.elements || [];
+
+    const elCards = els.map((el, i) => {
+        const isText = el.type === 'text';
+        const activeStyle = (active) =>
+            active ? 'border:1px solid #00d4ff;background:#00d4ff15;color:#00d4ff;'
+                   : 'border:1px solid #2a2a40;background:#0d0d1a;color:#666;';
+
+        const styleRow = isText ? `
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:2px;">
+                <input type="color" value="${el.color||'#ffffff'}"
+                    style="width:24px;height:22px;padding:1px;cursor:pointer;border-radius:3px;border:1px solid #333;background:#0d0d1a;flex-shrink:0;"
+                    oninput="edUpdateEl(${idx},${i},'color',this.value)">
+                <button onclick="edUpdateEl(${idx},${i},'bold',!edSlides[${idx}].elements[${i}].bold)"
+                    style="padding:2px 7px;border-radius:4px;font-weight:700;font-size:0.75rem;cursor:pointer;${activeStyle(el.bold)}">B</button>
+                <button onclick="edUpdateEl(${idx},${i},'italic',!edSlides[${idx}].elements[${i}].italic)"
+                    style="padding:2px 7px;border-radius:4px;font-style:italic;font-size:0.75rem;cursor:pointer;${activeStyle(el.italic)}">I</button>
+                <select onchange="edUpdateEl(${idx},${i},'align',this.value)"
+                    style="padding:2px 4px;font-size:0.7rem;background:#0d0d1a;border:1px solid #2a2a40;border-radius:4px;color:#ccc;">
+                    <option value="left"${(el.align||'left')==='left'?' selected':''}>← Izq</option>
+                    <option value="center"${el.align==='center'?' selected':''}>↔ Centro</option>
+                    <option value="right"${el.align==='right'?' selected':''}>→ Der</option>
+                </select>
+            </div>` : `
+            <div style="display:flex;gap:4px;align-items:center;margin-top:2px;">
+                <span class="el-lbl">Ajuste:</span>
+                <button onclick="edUpdateEl(${idx},${i},'fit','contain')"
+                    style="padding:2px 8px;border-radius:4px;font-size:0.7rem;cursor:pointer;${activeStyle((el.fit||'contain')==='contain')}">Contener</button>
+                <button onclick="edUpdateEl(${idx},${i},'fit','cover')"
+                    style="padding:2px 8px;border-radius:4px;font-size:0.7rem;cursor:pointer;${activeStyle(el.fit==='cover')}">Rellenar</button>
+            </div>`;
+
+        const rng = (key, val, min, max, color, unit) =>
+            `<input type="range" min="${min}" max="${max}" step="${unit==='vw'?0.25:1}" value="${val}"
+                style="flex:1;accent-color:${color};cursor:pointer;height:4px;"
+                oninput="edUpdateEl(${idx},${i},'${key}',+this.value);this.nextElementSibling.textContent=this.value+'${unit||'%'}'">
+            <span style="font-size:0.68rem;color:#aaa;min-width:36px;text-align:right;">${val}${unit||'%'}</span>`;
+
+        const sizeRange = isText
+            ? rng('size', el.fontSize??2.5, 0.5, 15, '#7b2ff7', 'vw')
+            : rng('size', el.w??30, 5, 100, '#7b2ff7');
+
+        return `<div class="el-card">
+            <div style="display:flex;align-items:center;gap:4px;">
+                <button class="el-type-btn${isText?' active':''}" onclick="edChangeElType(${idx},${i},'text')">T Texto</button>
+                <button class="el-type-btn${!isText?' active':''}" onclick="edChangeElType(${idx},${i},'image')">🖼 Imagen</button>
+                <button onclick="edDelElement(${idx},${i})"
+                    style="margin-left:auto;padding:2px 8px;border:1px solid #3a1a1a;border-radius:4px;background:#1a0a0a;color:#e74c3c;font-size:0.72rem;cursor:pointer;">✕</button>
+            </div>
+            <input value="${escHtml(el.content||'')}" placeholder="${isText?'Texto del elemento…':'URL de imagen…'}"
+                style="width:100%;padding:4px 7px;font-size:0.75rem;background:#0d0d1a;border:1px solid #2a2a40;border-radius:4px;color:#ccc;"
+                oninput="edUpdateEl(${idx},${i},'content',this.value)">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <span class="el-lbl" style="width:10px;">X</span>
+                ${rng('x', el.x??10, 0, 95, '#00d4ff')}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <span class="el-lbl" style="width:10px;">Y</span>
+                ${rng('y', el.y??10, 0, 95, '#00d4ff')}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <span class="el-lbl" style="width:10px;">${isText?'T':'⊡'}</span>
+                ${sizeRange}
+            </div>
+            ${styleRow}
+        </div>`;
+    }).join('');
+
+    return `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:0.72rem;color:#aaa;">Elementos adicionales (${els.length})</span>
+            <div style="display:flex;gap:4px;">
+                <button onclick="edAddElement(${idx},'text')"
+                    style="padding:3px 9px;border:1px solid #2a2a40;border-radius:4px;background:#0d0d1a;color:#aaa;font-size:0.7rem;cursor:pointer;">+ Texto</button>
+                <button onclick="edAddElement(${idx},'image')"
+                    style="padding:3px 9px;border:1px solid #2a2a40;border-radius:4px;background:#0d0d1a;color:#aaa;font-size:0.7rem;cursor:pointer;">+ Imagen</button>
+            </div>
+        </div>
+        <div id="edElList">
+            ${elCards || '<div style="color:#444;font-size:0.72rem;padding:2px 0;">Sin elementos adicionales</div>'}
+        </div>`;
+}
+
+function edAddElement(idx, type) {
+    if (!edSlides[idx]) return;
+    if (!edSlides[idx].elements) edSlides[idx].elements = [];
+    edSlides[idx].elements.push(type === 'text'
+        ? { type:'text',  content:'', x:10, y:10, w:40, h:15, fontSize:2.5, color:'#ffffff', bold:false, italic:false, align:'left' }
+        : { type:'image', content:'', x:20, y:20, w:60, h:60, fit:'contain' });
+    document.getElementById('edElementsSection').innerHTML = edElementsHTML(idx);
+    updateEdPreview();
+}
+
+function edDelElement(idx, i) {
+    edSlides[idx]?.elements?.splice(i, 1);
+    document.getElementById('edElementsSection').innerHTML = edElementsHTML(idx);
+    updateEdPreview();
+}
+
+function edChangeElType(idx, i, type) {
+    const el = edSlides[idx]?.elements?.[i];
+    if (!el || el.type === type) return;
+    edSlides[idx].elements[i] = type === 'text'
+        ? { type:'text',  content:el.content||'', x:el.x, y:el.y, w:el.w, h:el.h, fontSize:2.5, color:'#ffffff', bold:false, italic:false, align:'left' }
+        : { type:'image', content:el.content||'', x:el.x, y:el.y, w:el.w, h:el.h, fit:'contain' };
+    document.getElementById('edElementsSection').innerHTML = edElementsHTML(idx);
+    updateEdPreview();
+}
+
+function edUpdateEl(idx, i, key, value) {
+    const el = edSlides[idx]?.elements?.[i];
+    if (!el) return;
+    if (key === 'size') {
+        if (el.type === 'text') {
+            el.fontSize = value;
+        } else {
+            const ratio = (el.w && el.h) ? el.h / el.w : 1;
+            el.w = value;
+            el.h = Math.max(1, Math.round(value * ratio));
+        }
+    } else {
+        el[key] = value;
+    }
+    updateEdPreview();
+    // Re-render solo controles de toggle/select
+    if (['bold','italic','fit','align'].includes(key)) {
+        document.getElementById('edElementsSection').innerHTML = edElementsHTML(idx);
+    }
+}
+
+function edCamSectionHTML(idx) {
+    const s   = edSlides[idx];
+    const cfg = s?.camConfig;
+    if (!cfg) {
+        return `<div style="color:#666;font-size:0.75rem;padding:6px 0;">📷 Sin config de cámara guardada
+            <button onclick="edSetCamSlide(${idx},'init',true)"
+                style="margin-left:8px;padding:3px 8px;border:1px solid #2a2a40;border-radius:4px;
+                    background:#0d0d1a;color:#aaa;font-size:0.72rem;cursor:pointer;">
+                + Agregar config
+            </button>
+        </div>`;
+    }
+    const p = cfg.pos   || 'br';
+    const sh= cfg.shape || 'rect';
+    const sz= cfg.size  ?? 22;
+    const mi= cfg.mirror ?? true;
+
+    const posBtn = (pos, label) =>
+        `<button onclick="edSetCamSlide(${idx},'pos','${pos}')"
+            style="flex:1;padding:5px 3px;border:1px solid ${p===pos?'#00d4ff':'#2a2a40'};border-radius:5px;
+                background:${p===pos?'#00d4ff15':'#0d0d1a'};color:${p===pos?'#00d4ff':'#666'};
+                font-size:0.7rem;cursor:pointer;">${label}</button>`;
+
+    const shBtn = (shape, label) =>
+        `<button onclick="edSetCamSlide(${idx},'shape','${shape}')"
+            style="flex:1;padding:5px 3px;border:1px solid ${sh===shape?'#00d4ff':'#2a2a40'};border-radius:5px;
+                background:${sh===shape?'#00d4ff15':'#0d0d1a'};color:${sh===shape?'#00d4ff':'#666'};
+                font-size:0.7rem;cursor:pointer;">${label}</button>`;
+
+    return `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:5px;">
+            ${posBtn('tl','↖')}${posBtn('center','⊙ Centro')}${posBtn('tr','↗')}
+            ${posBtn('bl','↙')}${posBtn('full','⛶ Pantalla')}${posBtn('br','↘')}
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:5px;">
+            ${shBtn('rect','▭ Rect')}${shBtn('circle','◉ Círculo')}
+            <button onclick="edSetCamSlide(${idx},'mirror',${!mi})"
+                style="flex:1;padding:5px 3px;border:1px solid ${mi?'#00d4ff':'#2a2a40'};border-radius:5px;
+                    background:${mi?'#00d4ff15':'#0d0d1a'};color:${mi?'#00d4ff':'#666'};
+                    font-size:0.7rem;cursor:pointer;">⇔ Espejo</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">
+            <input type="range" min="10" max="60" value="${sz}"
+                style="flex:1;accent-color:#00d4ff;cursor:pointer;"
+                oninput="edSetCamSlide(${idx},'size',+this.value)">
+            <span id="edCamSizeLabel${idx}" style="font-size:0.75rem;color:#aaa;min-width:32px;">${sz}%</span>
+        </div>
+        <button onclick="edClearCamSlide(${idx})"
+            style="width:100%;padding:4px;border:1px solid #3a1a1a;border-radius:5px;
+                background:#1a0a0a;color:#e74c3c;font-size:0.72rem;cursor:pointer;">
+            🗑 Quitar config de cámara
+        </button>`;
+}
+
+function edSetCamSlide(idx, key, value) {
+    if (!edSlides[idx]) return;
+    if (key === 'init') {
+        edSlides[idx].camConfig = { pos: camPos, shape: camShape, size: camSize, mirror: camMirror };
+    } else {
+        if (!edSlides[idx].camConfig) edSlides[idx].camConfig = { pos:'br', shape:'rect', size:22, mirror:true };
+        edSlides[idx].camConfig[key] = value;
+    }
+    const sec = document.getElementById('edCamSection');
+    if (sec) sec.innerHTML = edCamSectionHTML(idx);
+}
+
+function edClearCamSlide(idx) {
+    if (edSlides[idx]) delete edSlides[idx].camConfig;
+    const sec = document.getElementById('edCamSection');
+    if (sec) sec.innerHTML = edCamSectionHTML(idx);
 }
 
 function edApplyTemplate(idx) {
@@ -1157,9 +1395,7 @@ async function toggleCamera() {
 
 function sendCamConfig() {
     const msg = { action:'camera', enabled:cameraEnabled, pos:camPos, shape:camShape, size:camSize, mirror:camMirror };
-    // Al preview central
     try { document.getElementById('slideFrame').contentWindow.postMessage(msg, '*'); } catch(e){}
-    // Al proyector
     if (projectorWin && !projectorWin.closed) projectorWin.postMessage(msg, '*');
 }
 
@@ -1167,21 +1403,70 @@ function setCamPos(pos) {
     camPos = pos;
     document.querySelectorAll('.cam-pos-btn').forEach(b => b.classList.toggle('active', b.dataset.pos === pos));
     sendCamConfig();
+    saveCamToSlide();
 }
 function setCamShape(shape) {
     camShape = shape;
     document.querySelectorAll('[data-shape]').forEach(b => b.classList.toggle('active', b.dataset.shape === shape));
     sendCamConfig();
+    saveCamToSlide();
 }
 function setCamSize(val) {
     camSize = parseInt(val);
     document.getElementById('camSizeLabel').textContent = camSize + '%';
     sendCamConfig();
+    saveCamToSlide();
 }
 function toggleCamMirror() {
     camMirror = !camMirror;
     document.getElementById('camMirrorBtn').classList.toggle('active', camMirror);
     sendCamConfig();
+    saveCamToSlide();
+}
+
+// ── Config de cámara por slide ────────────────────────────────────────────────
+function saveCamToSlide() {
+    if (!currentPres || !cameraEnabled) return;
+    const slide = currentPres.slides[currentIndex];
+    if (!slide) return;
+    slide.camConfig = { pos:camPos, shape:camShape, size:camSize, mirror:camMirror };
+    updateCamSlideIndicator();
+}
+
+function applyCamFromSlide(idx) {
+    const slide = currentPres?.slides[idx];
+    const cfg   = slide?.camConfig;
+    const ind   = document.getElementById('camSlideIndicator');
+    if (ind) ind.style.display = cfg ? 'flex' : 'none';
+    if (!cfg || !cameraEnabled) return;
+
+    camPos    = cfg.pos    ?? camPos;
+    camShape  = cfg.shape  ?? camShape;
+    camSize   = cfg.size   ?? camSize;
+    camMirror = cfg.mirror ?? camMirror;
+
+    // Sincronizar controles UI
+    document.querySelectorAll('.cam-pos-btn').forEach(b => b.classList.toggle('active', b.dataset.pos === camPos));
+    document.querySelectorAll('[data-shape]').forEach(b => b.classList.toggle('active', b.dataset.shape === camShape));
+    const range = document.getElementById('camSizeRange');
+    if (range) { range.value = camSize; document.getElementById('camSizeLabel').textContent = camSize + '%'; }
+    const mirBtn = document.getElementById('camMirrorBtn');
+    if (mirBtn) mirBtn.classList.toggle('active', camMirror);
+
+    sendCamConfig();
+}
+
+function clearCamFromSlide() {
+    const slide = currentPres?.slides[currentIndex];
+    if (slide) delete slide.camConfig;
+    const ind = document.getElementById('camSlideIndicator');
+    if (ind) ind.style.display = 'none';
+}
+
+function updateCamSlideIndicator() {
+    const slide = currentPres?.slides[currentIndex];
+    const ind   = document.getElementById('camSlideIndicator');
+    if (ind) ind.style.display = slide?.camConfig ? 'flex' : 'none';
 }
 
 function drawCameraOverlay(ctx, w, h, camVid) {
