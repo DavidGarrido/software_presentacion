@@ -63,6 +63,18 @@
             font-size:0.58rem; color:rgba(255,255,255,0.7);
             background:rgba(0,0,0,0.6); padding:1px 4px; border-radius:3px;
         }
+        .thumb-layout {
+            position:absolute; top:2px; left:3px;
+            font-size:0.6rem; color:rgba(255,255,255,0.8);
+            background:rgba(0,0,0,0.6); padding:1px 5px; border-radius:3px;
+            display:flex; align-items:center; gap:3px;
+        }
+        .thumb-layout-icon {
+            width:12px; height:10px;
+            background:rgba(255,255,255,0.3);
+            border-radius:2px; display:flex; align-items:center; justify-content:center;
+            font-size:0.45rem;
+        }
 
         /* Panel central */
         .center-panel { flex:1; display:flex; flex-direction:column; padding:12px; gap:8px; overflow:hidden; min-width:0; }
@@ -225,6 +237,49 @@
             font-size:0.72rem; font-weight:600;
         }
 
+        /* Layout cards */
+        .layout-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
+        .layout-card {
+            display:flex; flex-direction:column; align-items:center; gap:4px;
+            padding:6px 4px; border-radius:7px; cursor:pointer;
+            border:2px solid #2a2a40; background:#0d0d1a; transition:all 0.15s;
+        }
+        .layout-card:hover { border-color:#555; }
+        .layout-card.active { border-color:#00d4ff; background:#00d4ff0d; }
+        .layout-card span { font-size:0.62rem; color:#aaa; }
+        .layout-card.active span { color:#00d4ff; }
+        .layout-card svg { width:100%; height:auto; border-radius:3px; }
+
+        /* Color swatches */
+        .color-swatch {
+            width:22px; height:22px; border-radius:5px; border:2px solid transparent;
+            cursor:pointer; transition:border-color 0.12s; flex-shrink:0;
+        }
+        .color-swatch:hover { border-color:#888; }
+        .color-swatch.active { border-color:#00d4ff; }
+
+        /* Template cards */
+        .template-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+        .template-card {
+            padding:8px 6px; border-radius:7px; border:1px solid #2a2a40;
+            background:#0d0d1a; cursor:pointer; text-align:center; transition:all 0.15s;
+        }
+        .template-card:hover { border-color:#00d4ff; background:#00d4ff0d; }
+        .template-card .tc-icon { font-size:1.2rem; display:block; margin-bottom:4px; }
+        .template-card .tc-name { font-size:0.72rem; color:#ddd; display:block; }
+        .template-card .tc-desc { font-size:0.65rem; color:#666; display:block; margin-top:2px; }
+
+        /* Live preview container */
+        .ed-preview-wrap {
+            width:100%; height:135px; border-radius:8px; border:1px solid #2a2a40;
+            overflow:hidden; flex-shrink:0; position:relative; background:#0d0d1a;
+        }
+        .ed-preview-wrap iframe {
+            width:1280px; height:720px; border:none;
+            transform:scale(0.1875); transform-origin:top left;
+            pointer-events:none;
+        }
+
         /* Slide editor expandido */
         .slide-editor { display:flex; flex-direction:column; gap:8px; }
 
@@ -364,15 +419,15 @@
      MODAL: Editor de presentación
 ══════════════════════════════════════════════════════ -->
 <div class="modal-overlay hidden" id="modalEditor">
-    <div class="modal" style="max-width:780px;">
+    <div class="modal" style="max-width:920px;">
         <div class="modal-header">
             <h2 id="editorTitle">Nueva presentación</h2>
             <button class="modal-close" onclick="closeModal('modalEditor')">✕</button>
         </div>
-        <div class="modal-body" style="flex-direction:row;gap:0;padding:0;overflow:hidden;height:500px;">
+        <div class="modal-body" style="flex-direction:row;gap:0;padding:0;overflow:hidden;height:540px;">
 
             <!-- Lista de slides -->
-            <div style="width:200px;flex-shrink:0;background:#0a0a15;border-right:1px solid #2a2a40;display:flex;flex-direction:column;padding:10px;gap:6px;overflow:hidden;">
+            <div style="width:175px;flex-shrink:0;background:#0a0a15;border-right:1px solid #2a2a40;display:flex;flex-direction:column;padding:10px;gap:6px;overflow:hidden;">
                 <input type="text" id="edPresName" placeholder="Nombre de la presentación"
                     style="padding:6px 8px;background:#0d0d1a;border:1px solid #333;border-radius:5px;color:white;font-size:0.8rem;">
                 <div style="flex:1;overflow-y:auto;" id="edSlideList"></div>
@@ -380,7 +435,7 @@
             </div>
 
             <!-- Editor del slide seleccionado -->
-            <div style="flex:1;padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;" id="edSlideForm">
+            <div style="flex:1;padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;" id="edSlideForm">
                 <p style="color:#555;font-size:0.85rem;text-align:center;margin-top:40px;">Selecciona o crea un slide</p>
             </div>
         </div>
@@ -507,6 +562,14 @@ function updateUI() {
     });
 }
 
+// Iconos para cada tipo de layout
+const layoutIcons = {
+    '': '☰',
+    'cover': '◉',
+    'highlight': '★',
+    'image': '▣'
+};
+
 function renderThumbs() {
     const strip = document.getElementById('thumbStrip');
     strip.innerHTML = '';
@@ -526,7 +589,14 @@ function renderThumbs() {
         num.className = 'thumb-num';
         num.textContent = i + 1;
 
+        // Icono del layout
+        const layoutEl = document.createElement('div');
+        layoutEl.className = 'thumb-layout';
+        layoutEl.innerHTML = `<span class="thumb-layout-icon">${layoutIcons[s.layout || ''] || '☰'}</span>${s.layout || 'bullets'}`;
+        layoutEl.title = 'Layout: ' + (s.layout || 'bullets');
+
         item.appendChild(ifrm);
+        item.appendChild(layoutEl);
         item.appendChild(num);
         strip.appendChild(item);
     });
@@ -655,65 +725,284 @@ function renderEdSlideList() {
     });
 }
 
+// ── Constantes del editor ────────────────────────────────────────────────────
+
+const LAYOUT_DEFS = {
+    '': {
+        name: 'Bullets',
+        svg: `<svg viewBox="0 0 80 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="7" width="32" height="5" rx="2" fill="white" opacity="0.85"/>
+            <rect x="6" y="15" width="68" height="1.5" rx="1" fill="#00d4ff" opacity="0.4"/>
+            <circle cx="8.5" cy="21" r="1.5" fill="#00d4ff" opacity="0.7"/>
+            <rect x="12" y="19.5" width="30" height="3" rx="1.5" fill="white" opacity="0.4"/>
+            <circle cx="8.5" cy="27" r="1.5" fill="#00d4ff" opacity="0.7"/>
+            <rect x="12" y="25.5" width="24" height="3" rx="1.5" fill="white" opacity="0.4"/>
+            <circle cx="8.5" cy="33" r="1.5" fill="#00d4ff" opacity="0.7"/>
+            <rect x="12" y="31.5" width="28" height="3" rx="1.5" fill="white" opacity="0.4"/>
+        </svg>`
+    },
+    'cover': {
+        name: 'Portada',
+        svg: `<svg viewBox="0 0 80 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="4" width="20" height="2.5" rx="1.2" fill="#00d4ff" opacity="0.6"/>
+            <rect x="6" y="10" width="68" height="10" rx="3" fill="white" opacity="0.85"/>
+            <rect x="14" y="24" width="52" height="3.5" rx="1.8" fill="white" opacity="0.35"/>
+            <rect x="22" y="30" width="36" height="2.5" rx="1.2" fill="white" opacity="0.2"/>
+        </svg>`
+    },
+    'highlight': {
+        name: 'Destacado',
+        svg: `<svg viewBox="0 0 80 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="14" y="6" width="52" height="6" rx="2.5" fill="white" opacity="0.85"/>
+            <rect x="6" y="15" width="68" height="1.5" rx="1" fill="#00d4ff" opacity="0.4"/>
+            <rect x="8" y="20" width="64" height="16" rx="4" stroke="#00d4ff" stroke-width="1.2" opacity="0.6"/>
+            <rect x="14" y="25" width="52" height="5" rx="2.5" fill="#00d4ff" opacity="0.5"/>
+        </svg>`
+    },
+    'image': {
+        name: 'Imagen',
+        svg: `<svg viewBox="0 0 80 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="16" y="5" width="48" height="5.5" rx="2.5" fill="white" opacity="0.85"/>
+            <rect x="10" y="14" width="60" height="26" rx="4" fill="white" opacity="0.07" stroke="white" stroke-width="0.8" stroke-opacity="0.25"/>
+            <polygon points="22,36 34,22 46,36" fill="white" opacity="0.18"/>
+            <polygon points="38,36 48,28 58,36" fill="white" opacity="0.14"/>
+            <circle cx="52" cy="20" r="3" fill="white" opacity="0.18"/>
+        </svg>`
+    }
+};
+
+const COLOR_PRESETS = [
+    { name:'Negro',         value:'#0d0d1a',   solid:true  },
+    { name:'Azul oscuro',   value:'#0f3460',   solid:true  },
+    { name:'Morado',        value:'#1a0a2e',   solid:true  },
+    { name:'Verde oscuro',  value:'#0a1a10',   solid:true  },
+    { name:'Rojo oscuro',   value:'#1a0505',   solid:true  },
+    { name:'Gris azul',     value:'#111827',   solid:true  },
+    { name:'G. Azul',       value:'linear-gradient(135deg,#0d0d1a,#0f3460)', solid:false },
+    { name:'G. Morado',     value:'linear-gradient(135deg,#0d0d1a,#2d0f60)', solid:false },
+    { name:'G. Verde',      value:'linear-gradient(135deg,#0d0d1a,#0f3020)', solid:false },
+    { name:'G. Naranja',    value:'linear-gradient(135deg,#0d0d1a,#3d1a00)', solid:false },
+    { name:'G. Rojo',       value:'linear-gradient(135deg,#1a0505,#3d1010)', solid:false },
+    { name:'G. Teal',       value:'linear-gradient(135deg,#0d1a1a,#0f4040)', solid:false },
+];
+
+const SLIDE_TEMPLATES = [
+    { icon:'🎯', name:'Portada',    desc:'Título grande + subtítulo',
+      data:{ layout:'cover', bg:'linear-gradient(135deg,#0d0d1a,#0f3460)', tag:'Presentación',
+             title:'Título de la presentación', content:'Subtítulo o descripción breve', notes:'' } },
+    { icon:'☰', name:'Bullets',    desc:'Lista de puntos',
+      data:{ layout:'', bg:'#0d0d1a', tag:'',
+             title:'Título del slide', content:'Primer punto\nSegundo punto\nTercer punto', notes:'Explica cada punto en detalle.' } },
+    { icon:'★', name:'Destacado',  desc:'Dato o cita importante',
+      data:{ layout:'highlight', bg:'linear-gradient(135deg,#0d0d1a,#1a0a2e)', tag:'Dato clave',
+             title:'Cifra o dato relevante', content:'El texto destacado va aquí', notes:'' } },
+    { icon:'🖼', name:'Imagen',     desc:'Título + imagen URL',
+      data:{ layout:'image', bg:'#0d0d1a', tag:'',
+             title:'Título con imagen', content:'https://ejemplo.com/imagen.jpg', notes:'Describe la imagen para el público.' } },
+    { icon:'✅', name:'Cierre',     desc:'Slide de fin / gracias',
+      data:{ layout:'cover', bg:'linear-gradient(135deg,#0f3460,#0d0d1a)', tag:'Fin',
+             title:'¡Gracias!', content:'Preguntas y respuestas', notes:'Invita al público a hacer preguntas.' } },
+    { icon:'📋', name:'En blanco',  desc:'Slide vacío',
+      data:{ layout:'', bg:'#0d0d1a', tag:'', title:'', content:'', notes:'' } },
+];
+
+// ── Editor de slide ──────────────────────────────────────────────────────────
+
 function edShowSlideForm(idx) {
     const form = document.getElementById('edSlideForm');
     if (idx < 0 || !edSlides[idx]) {
-        form.innerHTML = '<p style="color:#555;font-size:0.85rem;text-align:center;margin-top:40px;">Selecciona o crea un slide</p>';
+        form.innerHTML = `
+            <p style="color:#888;font-size:0.82rem;margin-bottom:10px;">Elige una plantilla para el nuevo slide:</p>
+            <div class="template-grid">
+                ${SLIDE_TEMPLATES.map((t,i) => `
+                    <div class="template-card" onclick="edApplyTemplate(${i})">
+                        <span class="tc-icon">${t.icon}</span>
+                        <span class="tc-name">${t.name}</span>
+                        <span class="tc-desc">${t.desc}</span>
+                    </div>`).join('')}
+            </div>`;
         return;
     }
-    const s = edSlides[idx];
+    const s     = edSlides[idx];
+    const curBg = s.bg || '#0d0d1a';
+    const pickerVal = /^#[0-9a-fA-F]{3,6}$/.test(curBg) ? curBg : '#0d0d1a';
+
     form.innerHTML = `
-        <div class="field-group">
-            <label>Título</label>
-            <input id="efTitle" value="${escHtml(s.title||'')}">
-        </div>
-        <div class="field-group">
-            <label>Contenido <span style="color:#666;font-size:0.72rem;">(cada línea = un punto)</span></label>
-            <textarea id="efContent" rows="5">${escHtml(s.content||'')}</textarea>
-        </div>
-        <div class="field-group">
-            <label>Guión / notas <span style="color:#666;font-size:0.72rem;">(solo para el presentador)</span></label>
-            <textarea id="efNotes" rows="4">${escHtml(s.notes||'')}</textarea>
-        </div>
-        <div style="display:flex;gap:8px;">
-            <div class="field-group" style="flex:1;">
-                <label>Layout</label>
-                <select id="efLayout">
-                    <option value=""     ${!s.layout?'selected':''}>Bullets (defecto)</option>
-                    <option value="cover"    ${s.layout==='cover'?'selected':''}>Portada</option>
-                    <option value="highlight" ${s.layout==='highlight'?'selected':''}>Destacado</option>
-                    <option value="image"    ${s.layout==='image'?'selected':''}>Imagen</option>
-                </select>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+
+            <!-- Columna izquierda: campos -->
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
+
+                <!-- Layout selector visual -->
+                <div>
+                    <div style="font-size:0.72rem;color:#aaa;margin-bottom:5px;">Layout</div>
+                    <div class="layout-grid">
+                        ${Object.entries(LAYOUT_DEFS).map(([key, def]) => `
+                            <div class="layout-card${(s.layout||'')=== key?' active':''}"
+                                 data-layout="${key}" onclick="edSetLayout('${key}')">
+                                ${def.svg}
+                                <span>${def.name}</span>
+                            </div>`).join('')}
+                    </div>
+                    <input type="hidden" id="efLayout" value="${escHtml(s.layout||'')}">
+                </div>
+
+                <!-- Título + Tag -->
+                <div style="display:flex;gap:7px;">
+                    <div class="field-group" style="flex:2;">
+                        <label>Título</label>
+                        <input id="efTitle" value="${escHtml(s.title||'')}" oninput="updateEdPreview()">
+                    </div>
+                    <div class="field-group" style="flex:1;">
+                        <label>Tag</label>
+                        <input id="efTag" value="${escHtml(s.tag||'')}" oninput="updateEdPreview()">
+                    </div>
+                </div>
+
+                <!-- Contenido -->
+                <div class="field-group">
+                    <label>Contenido <span style="color:#555;font-size:0.68rem;">(cada línea = un punto)</span></label>
+                    <textarea id="efContent" rows="4" oninput="updateEdPreview()">${escHtml(s.content||'')}</textarea>
+                </div>
+
+                <!-- Guión -->
+                <div class="field-group">
+                    <label>Guión <span style="color:#555;font-size:0.68rem;">(solo para el presentador)</span></label>
+                    <textarea id="efNotes" rows="3">${escHtml(s.notes||'')}</textarea>
+                </div>
             </div>
-            <div class="field-group" style="flex:1;">
-                <label>Tag / etiqueta</label>
-                <input id="efTag" value="${escHtml(s.tag||'')}">
+
+            <!-- Columna derecha: preview + color -->
+            <div style="width:240px;flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
+
+                <!-- Live preview -->
+                <div>
+                    <div style="font-size:0.72rem;color:#aaa;margin-bottom:5px;">Vista previa</div>
+                    <div class="ed-preview-wrap">
+                        <iframe id="edPreviewFrame" src="viewer.html"></iframe>
+                    </div>
+                </div>
+
+                <!-- Color de fondo -->
+                <div>
+                    <div style="font-size:0.72rem;color:#aaa;margin-bottom:5px;">Fondo</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;" id="colorSwatches">
+                        ${COLOR_PRESETS.map(c => {
+                            const isActive = curBg === c.value;
+                            const previewBg = c.solid ? c.value : c.value;
+                            return `<button class="color-swatch${isActive?' active':''}"
+                                style="background:${previewBg}"
+                                title="${c.name}"
+                                onclick="edSetBg(${JSON.stringify(c.value)})"></button>`;
+                        }).join('')}
+                    </div>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <input type="color" id="efBgPicker" value="${pickerVal}"
+                            style="width:36px;height:30px;padding:2px;cursor:pointer;border-radius:5px;border:1px solid #333;background:#0d0d1a;"
+                            oninput="document.getElementById('efBg').value=this.value;updateEdPreview();syncSwatches()">
+                        <input id="efBg" value="${escHtml(curBg)}"
+                            placeholder="#hex o gradient"
+                            style="flex:1;font-size:0.75rem;"
+                            oninput="syncColorPicker();updateEdPreview();syncSwatches()">
+                    </div>
+                </div>
+
             </div>
-        </div>
-        <div class="field-group">
-            <label>Fondo <span style="color:#666;font-size:0.72rem;">(color o gradiente CSS)</span></label>
-            <input id="efBg" value="${escHtml(s.bg||'#0d0d1a')}" placeholder="#0d0d1a">
         </div>
     `;
+
+    // Cargar preview tras render del iframe
+    setTimeout(updateEdPreview, 250);
+}
+
+function edSetLayout(layout) {
+    document.querySelectorAll('.layout-card').forEach(c =>
+        c.classList.toggle('active', c.dataset.layout === layout));
+    const inp = document.getElementById('efLayout');
+    if (inp) inp.value = layout;
+    updateEdPreview();
+}
+
+function edSetBg(value) {
+    const inp = document.getElementById('efBg');
+    if (inp) inp.value = value;
+    const picker = document.getElementById('efBgPicker');
+    if (picker && /^#[0-9a-fA-F]{3,6}$/.test(value)) picker.value = value;
+    syncSwatches();
+    updateEdPreview();
+}
+
+function syncColorPicker() {
+    const val = document.getElementById('efBg')?.value || '';
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+        const p = document.getElementById('efBgPicker');
+        if (p) p.value = val;
+    }
+}
+
+function syncSwatches() {
+    const val = document.getElementById('efBg')?.value || '';
+    document.querySelectorAll('.color-swatch').forEach(btn => {
+        const match = COLOR_PRESETS.find(c => c.value === val);
+        btn.classList.toggle('active', match ? match.value === btn.title.replace(/.*title="([^"]+)".*/, '$1') : false);
+    });
+    // Simplificado: comparar por onclick value
+    document.querySelectorAll('#colorSwatches .color-swatch').forEach(btn => {
+        const onclick = btn.getAttribute('onclick') || '';
+        const m = onclick.match(/edSetBg\((.+)\)/);
+        if (m) {
+            try { btn.classList.toggle('active', JSON.parse(m[1]) === val); } catch(e){}
+        }
+    });
+}
+
+function updateEdPreview() {
+    const iframe = document.getElementById('edPreviewFrame');
+    if (!iframe?.contentWindow) return;
+    const slide = {
+        title:   document.getElementById('efTitle')?.value   || '',
+        content: document.getElementById('efContent')?.value || '',
+        notes:   document.getElementById('efNotes')?.value   || '',
+        layout:  document.getElementById('efLayout')?.value  || '',
+        tag:     document.getElementById('efTag')?.value     || '',
+        bg:      document.getElementById('efBg')?.value      || '#0d0d1a'
+    };
+    try {
+        iframe.contentWindow.postMessage({ action:'load', slides:[slide], index:0 }, '*');
+    } catch(e) {}
+}
+
+function edApplyTemplate(idx) {
+    const tpl = SLIDE_TEMPLATES[idx];
+    if (!tpl) return;
+    // Si no hay slide seleccionado, crear uno nuevo
+    if (edSelectedIdx < 0) {
+        edSlides.push({ ...tpl.data });
+        edSelectedIdx = edSlides.length - 1;
+    } else {
+        Object.assign(edSlides[edSelectedIdx], tpl.data);
+    }
+    renderEdSlideList();
+    edShowSlideForm(edSelectedIdx);
 }
 
 function edSaveCurrentForm() {
     if (edSelectedIdx < 0 || !edSlides[edSelectedIdx]) return;
     const s = edSlides[edSelectedIdx];
-    s.title   = document.getElementById('efTitle')?.value   || '';
-    s.content = document.getElementById('efContent')?.value || '';
-    s.notes   = document.getElementById('efNotes')?.value   || '';
-    s.layout  = document.getElementById('efLayout')?.value  || '';
-    s.tag     = document.getElementById('efTag')?.value     || '';
-    s.bg      = document.getElementById('efBg')?.value      || '#0d0d1a';
+    s.title   = document.getElementById('efTitle')?.value   ?? s.title;
+    s.content = document.getElementById('efContent')?.value ?? s.content;
+    s.notes   = document.getElementById('efNotes')?.value   ?? s.notes;
+    s.layout  = document.getElementById('efLayout')?.value  ?? s.layout;
+    s.tag     = document.getElementById('efTag')?.value     ?? s.tag;
+    s.bg      = document.getElementById('efBg')?.value      || s.bg || '#0d0d1a';
 }
 
 function edAddSlide() {
     edSaveCurrentForm();
-    edSlides.push({ title:'Nuevo slide', content:'', notes:'', tag:'', layout:'', bg:'#0d0d1a' });
-    edSelectedIdx = edSlides.length - 1;
+    // Mostrar selector de plantillas (sin crear slide todavía)
+    edSelectedIdx = -1;
     renderEdSlideList();
-    edShowSlideForm(edSelectedIdx);
+    edShowSlideForm(-1);
 }
 
 function edDelSlide(i) {
