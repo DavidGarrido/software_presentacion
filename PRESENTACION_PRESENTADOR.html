@@ -496,6 +496,13 @@
     <div class="modal" style="max-width:920px;">
         <div class="modal-header">
             <h2 id="editorTitle">Nueva presentación</h2>
+            <div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:8px;">
+                <button id="edUndoBtn" onclick="edUndo()" disabled title="Deshacer (Ctrl+Z)"
+                    style="padding:4px 10px;border:1px solid #2a2a40;border-radius:5px;background:#0d0d1a;color:#aaa;font-size:0.78rem;cursor:pointer;transition:all 0.15s;">↩ Deshacer</button>
+                <button id="edRedoBtn" onclick="edRedo()" disabled title="Rehacer (Ctrl+Y)"
+                    style="padding:4px 10px;border:1px solid #2a2a40;border-radius:5px;background:#0d0d1a;color:#aaa;font-size:0.78rem;cursor:pointer;transition:all 0.15s;">↪ Rehacer</button>
+                <span id="edHistoryLabel" style="font-size:0.68rem;color:#444;min-width:28px;text-align:center;"></span>
+            </div>
             <button class="modal-close" onclick="closeModal('modalEditor')">✕</button>
         </div>
         <div class="modal-body" style="flex-direction:row;gap:0;padding:0;overflow:hidden;height:540px;">
@@ -692,6 +699,11 @@ function prevSlide() {
 }
 
 document.addEventListener('keydown', e => {
+    // Ctrl+Z / Ctrl+Y dentro del editor
+    if (!document.getElementById('modalEditor')?.classList.contains('hidden')) {
+        if (e.ctrlKey && e.key === 'z') { e.preventDefault(); edUndo(); return; }
+        if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); edRedo(); return; }
+    }
     if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
     if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevSlide();
@@ -765,10 +777,74 @@ let edSlides = [];
 let edSelectedIdx = -1;
 let edEditingId   = null;
 
+// ── Historial de cambios (hasta 20 pasos) ────────────────────────────────────
+const ED_MAX_HISTORY = 20;
+let edHistory    = [];
+let edHistoryIdx = -1;
+let edSnapshotTimer = null;
+
+function edSnapshot() {
+    // Captura el estado actual del formulario antes de guardar
+    edSaveCurrentForm();
+    const raw = JSON.stringify({ s: edSlides, i: edSelectedIdx });
+    // No duplicar si el estado no cambió
+    if (edHistoryIdx >= 0 && edHistory[edHistoryIdx] === raw) return;
+    // Eliminar redo history al hacer un cambio nuevo
+    edHistory = edHistory.slice(0, edHistoryIdx + 1);
+    edHistory.push(raw);
+    if (edHistory.length > ED_MAX_HISTORY) edHistory.shift();
+    edHistoryIdx = edHistory.length - 1;
+    _edUpdateHistoryUI();
+}
+
+function edSnapshotDebounced() {
+    clearTimeout(edSnapshotTimer);
+    edSnapshotTimer = setTimeout(edSnapshot, 700);
+}
+
+function edUndo() {
+    if (edHistoryIdx <= 0) return;
+    edHistoryIdx--;
+    _edApplySnapshot();
+}
+
+function edRedo() {
+    if (edHistoryIdx >= edHistory.length - 1) return;
+    edHistoryIdx++;
+    _edApplySnapshot();
+}
+
+function _edApplySnapshot() {
+    const state   = JSON.parse(edHistory[edHistoryIdx]);
+    edSlides      = state.s;
+    edSelectedIdx = state.i;
+    renderEdSlideList();
+    edShowSlideForm(edSelectedIdx);
+    _edUpdateHistoryUI();
+}
+
+function _edUpdateHistoryUI() {
+    const u = document.getElementById('edUndoBtn');
+    const r = document.getElementById('edRedoBtn');
+    const l = document.getElementById('edHistoryLabel');
+    if (u) u.disabled = edHistoryIdx <= 0;
+    if (r) r.disabled = edHistoryIdx >= edHistory.length - 1;
+    if (l) l.textContent = edHistory.length > 1
+        ? `${edHistoryIdx + 1}/${edHistory.length}`
+        : '';
+}
+
+function _edResetHistory() {
+    edHistory    = [];
+    edHistoryIdx = -1;
+    _edUpdateHistoryUI();
+}
+
 function openEditorNueva() {
     edEditingId   = null;
     edSlides      = [];
     edSelectedIdx = -1;
+    _edResetHistory();
     document.getElementById('editorTitle').textContent = 'Nueva presentación';
     document.getElementById('edPresName').value = '';
     renderEdSlideList();
@@ -784,6 +860,7 @@ async function openEditorExistente(id, startIndex) {
     edSelectedIdx = (startIndex != null && startIndex >= 0 && startIndex < edSlides.length)
         ? startIndex
         : (edSlides.length ? 0 : -1);
+    _edResetHistory();
     document.getElementById('editorTitle').textContent = 'Editar: ' + p.name;
     document.getElementById('edPresName').value = p.name;
     renderEdSlideList();
@@ -935,24 +1012,24 @@ function edShowSlideForm(idx) {
                 <div style="display:flex;gap:7px;">
                     <div class="field-group" style="flex:2;">
                         <label>Título</label>
-                        <input id="efTitle" value="${escHtml(s.title||'')}" oninput="updateEdPreview()">
+                        <input id="efTitle" value="${escHtml(s.title||'')}" oninput="updateEdPreview()" onchange="edSnapshotDebounced()">
                     </div>
                     <div class="field-group" style="flex:1;">
                         <label>Tag</label>
-                        <input id="efTag" value="${escHtml(s.tag||'')}" oninput="updateEdPreview()">
+                        <input id="efTag" value="${escHtml(s.tag||'')}" oninput="updateEdPreview()" onchange="edSnapshotDebounced()">
                     </div>
                 </div>
 
                 <!-- Contenido -->
                 <div class="field-group">
                     <label>Contenido <span style="color:#555;font-size:0.68rem;">(cada línea = un punto)</span></label>
-                    <textarea id="efContent" rows="4" oninput="updateEdPreview()">${escHtml(s.content||'')}</textarea>
+                    <textarea id="efContent" rows="4" oninput="updateEdPreview()" onchange="edSnapshotDebounced()">${escHtml(s.content||'')}</textarea>
                 </div>
 
                 <!-- Guión -->
                 <div class="field-group">
                     <label>Guión <span style="color:#555;font-size:0.68rem;">(solo para el presentador)</span></label>
-                    <textarea id="efNotes" rows="3">${escHtml(s.notes||'')}</textarea>
+                    <textarea id="efNotes" rows="3" onchange="edSnapshotDebounced()">${escHtml(s.notes||'')}</textarea>
                 </div>
 
                 <!-- Elementos adicionales -->
@@ -1010,12 +1087,14 @@ function edShowSlideForm(idx) {
 function edSetLayout(layout) {
     document.querySelectorAll('.layout-card').forEach(c =>
         c.classList.toggle('active', c.dataset.layout === layout));
+    edSnapshot();
     const inp = document.getElementById('efLayout');
     if (inp) inp.value = layout;
     updateEdPreview();
 }
 
 function edSetBg(value) {
+    edSnapshot();
     const inp = document.getElementById('efBg');
     if (inp) inp.value = value;
     const picker = document.getElementById('efBgPicker');
@@ -1048,13 +1127,14 @@ function updateEdPreview() {
     const iframe = document.getElementById('edPreviewFrame');
     if (!iframe?.contentWindow) return;
     const slide = {
-        title:    document.getElementById('efTitle')?.value   || '',
-        content:  document.getElementById('efContent')?.value || '',
-        notes:    document.getElementById('efNotes')?.value   || '',
-        layout:   document.getElementById('efLayout')?.value  || '',
-        tag:      document.getElementById('efTag')?.value     || '',
-        bg:       document.getElementById('efBg')?.value      || '#0d0d1a',
-        elements: edSlides[edSelectedIdx]?.elements || []
+        title:        document.getElementById('efTitle')?.value   || '',
+        content:      document.getElementById('efContent')?.value || '',
+        notes:        document.getElementById('efNotes')?.value   || '',
+        layout:       document.getElementById('efLayout')?.value  || '',
+        tag:          document.getElementById('efTag')?.value     || '',
+        bg:           document.getElementById('efBg')?.value      || '#0d0d1a',
+        elements:     edSlides[edSelectedIdx]?.elements     || [],
+        layoutHidden: edSlides[edSelectedIdx]?.layoutHidden || false
     };
     try {
         iframe.contentWindow.postMessage({ action:'load', slides:[slide], index:0 }, '*');
@@ -1100,6 +1180,7 @@ function edElementsHTML(idx) {
         const rng = (key, val, min, max, color, unit) =>
             `<input type="range" min="${min}" max="${max}" step="${unit==='vw'?0.25:1}" value="${val}"
                 style="flex:1;accent-color:${color};cursor:pointer;height:4px;"
+                onpointerdown="edSnapshot()"
                 oninput="edUpdateEl(${idx},${i},'${key}',+this.value);this.nextElementSibling.textContent=this.value+'${unit||'%'}'">
             <span style="font-size:0.68rem;color:#aaa;min-width:36px;text-align:right;">${val}${unit||'%'}</span>`;
 
@@ -1107,12 +1188,20 @@ function edElementsHTML(idx) {
             ? rng('size', el.fontSize??2.5, 0.5, 15, '#7b2ff7', 'vw')
             : rng('size', el.w??30, 5, 100, '#7b2ff7');
 
+        const total = els.length;
         return `<div class="el-card">
             <div style="display:flex;align-items:center;gap:4px;">
                 <button class="el-type-btn${isText?' active':''}" onclick="edChangeElType(${idx},${i},'text')">T Texto</button>
                 <button class="el-type-btn${!isText?' active':''}" onclick="edChangeElType(${idx},${i},'image')">🖼 Imagen</button>
-                <button onclick="edDelElement(${idx},${i})"
-                    style="margin-left:auto;padding:2px 8px;border:1px solid #3a1a1a;border-radius:4px;background:#1a0a0a;color:#e74c3c;font-size:0.72rem;cursor:pointer;">✕</button>
+                <span style="margin-left:auto;display:flex;gap:2px;align-items:center;">
+                    <button onclick="edMoveEl(${idx},${i},-1)" ${i===0?'disabled':''} title="Subir (menor z-index)"
+                        style="padding:2px 6px;border:1px solid #2a2a40;border-radius:4px;background:#0d0d1a;color:${i===0?'#333':'#aaa'};font-size:0.7rem;cursor:${i===0?'default':'pointer'};">▲</button>
+                    <span style="font-size:0.65rem;color:#444;min-width:14px;text-align:center;">${i+1}</span>
+                    <button onclick="edMoveEl(${idx},${i},1)" ${i===total-1?'disabled':''} title="Bajar (mayor z-index)"
+                        style="padding:2px 6px;border:1px solid #2a2a40;border-radius:4px;background:#0d0d1a;color:${i===total-1?'#333':'#aaa'};font-size:0.7rem;cursor:${i===total-1?'default':'pointer'};">▼</button>
+                    <button onclick="edDelElement(${idx},${i})"
+                        style="padding:2px 8px;border:1px solid #3a1a1a;border-radius:4px;background:#1a0a0a;color:#e74c3c;font-size:0.72rem;cursor:pointer;margin-left:2px;">✕</button>
+                </span>
             </div>
             <input value="${escHtml(el.content||'')}" placeholder="${isText?'Texto del elemento…':'URL de imagen…'}"
                 style="width:100%;padding:4px 7px;font-size:0.75rem;background:#0d0d1a;border:1px solid #2a2a40;border-radius:4px;color:#ccc;"
@@ -1133,10 +1222,17 @@ function edElementsHTML(idx) {
         </div>`;
     }).join('');
 
+    const layoutHidden = !!s?.layoutHidden;
     return `
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <span style="font-size:0.72rem;color:#aaa;">Elementos adicionales (${els.length})</span>
-            <div style="display:flex;gap:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
+            <span style="font-size:0.72rem;color:#aaa;">Elementos (${els.length})${layoutHidden?' · <span style="color:#00d4ff;">layout libre</span>':''}</span>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                ${layoutHidden
+                    ? `<button onclick="edRestoreLayout(${idx})"
+                        style="padding:3px 9px;border:1px solid #2a4a2a;border-radius:4px;background:#0a1a0a;color:#2ecc71;font-size:0.7rem;cursor:pointer;">↩ Restaurar layout</button>`
+                    : `<button onclick="edConvertLayoutToElements(${idx})"
+                        style="padding:3px 9px;border:1px solid #3a2a50;border-radius:4px;background:#1a0a2e;color:#a78bfa;font-size:0.7rem;cursor:pointer;">📐 Ajustar layout</button>`
+                }
                 <button onclick="edAddElement(${idx},'text')"
                     style="padding:3px 9px;border:1px solid #2a2a40;border-radius:4px;background:#0d0d1a;color:#aaa;font-size:0.7rem;cursor:pointer;">+ Texto</button>
                 <button onclick="edAddElement(${idx},'image')"
@@ -1148,8 +1244,78 @@ function edElementsHTML(idx) {
         </div>`;
 }
 
+function edConvertLayoutToElements(idx) {
+    const s = edSlides[idx];
+    if (!s) return;
+    edSnapshot();
+    if (!s.elements) s.elements = [];
+    const layout  = s.layout || '';
+    const lines   = (s.content || '').split('\n').map(l => l.trim()).filter(Boolean);
+    const isCover = layout === 'cover';
+    const newEls  = [];
+
+    // Tag
+    if (s.tag) newEls.push({
+        type:'text', content:s.tag,
+        x:10, y:4, w:50, h:6,
+        fontSize:0.9, color:'rgba(0,212,255,0.7)', bold:true, italic:false, align:'left'
+    });
+
+    // Título
+    if (s.title) newEls.push({
+        type:'text', content:s.title,
+        x: isCover ? 5  : 10,
+        y: isCover ? 28 : 12,
+        w: isCover ? 90 : 80,
+        h: isCover ? 22 : 18,
+        fontSize: isCover ? 5 : 3.5,
+        color:'#ffffff', bold:true, italic:false,
+        align: isCover ? 'center' : 'left'
+    });
+
+    // Contenido / subtítulo / highlight / imagen
+    if (layout === 'highlight' && lines.length) {
+        newEls.push({
+            type:'text', content:lines.join('\n'),
+            x:5, y:42, w:90, h:22,
+            fontSize:2.5, color:'#00d4ff', bold:true, italic:false, align:'center'
+        });
+    } else if (layout === 'image' && lines[0]) {
+        newEls.push({
+            type:'image', content:lines[0],
+            x:15, y:36, w:70, h:55, fit:'contain'
+        });
+    } else if (lines.length) {
+        newEls.push({
+            type:'text', content:lines.join('\n'),
+            x:10,
+            y: isCover ? 54 : 35,
+            w:80,
+            h: isCover ? 14 : 58,
+            fontSize: isCover ? 1.8 : 1.8,
+            color:'rgba(255,255,255,0.85)', bold:false, italic:false,
+            align: isCover ? 'center' : 'left'
+        });
+    }
+
+    s.elements = [...newEls, ...s.elements];
+    s.layoutHidden = true;
+    document.getElementById('edElementsSection').innerHTML = edElementsHTML(idx);
+    updateEdPreview();
+}
+
+function edRestoreLayout(idx) {
+    const s = edSlides[idx];
+    if (!s) return;
+    edSnapshot();
+    delete s.layoutHidden;
+    document.getElementById('edElementsSection').innerHTML = edElementsHTML(idx);
+    updateEdPreview();
+}
+
 function edAddElement(idx, type) {
     if (!edSlides[idx]) return;
+    edSnapshot();
     if (!edSlides[idx].elements) edSlides[idx].elements = [];
     edSlides[idx].elements.push(type === 'text'
         ? { type:'text',  content:'', x:10, y:10, w:40, h:15, fontSize:2.5, color:'#ffffff', bold:false, italic:false, align:'left' }
@@ -1159,7 +1325,19 @@ function edAddElement(idx, type) {
 }
 
 function edDelElement(idx, i) {
+    edSnapshot();
     edSlides[idx]?.elements?.splice(i, 1);
+    document.getElementById('edElementsSection').innerHTML = edElementsHTML(idx);
+    updateEdPreview();
+}
+
+function edMoveEl(idx, i, dir) {
+    const els = edSlides[idx]?.elements;
+    if (!els) return;
+    edSnapshot();
+    const j = i + dir;
+    if (j < 0 || j >= els.length) return;
+    [els[i], els[j]] = [els[j], els[i]];
     document.getElementById('edElementsSection').innerHTML = edElementsHTML(idx);
     updateEdPreview();
 }
@@ -1167,6 +1345,7 @@ function edDelElement(idx, i) {
 function edChangeElType(idx, i, type) {
     const el = edSlides[idx]?.elements?.[i];
     if (!el || el.type === type) return;
+    edSnapshot();
     edSlides[idx].elements[i] = type === 'text'
         ? { type:'text',  content:el.content||'', x:el.x, y:el.y, w:el.w, h:el.h, fontSize:2.5, color:'#ffffff', bold:false, italic:false, align:'left' }
         : { type:'image', content:el.content||'', x:el.x, y:el.y, w:el.w, h:el.h, fit:'contain' };
@@ -1251,6 +1430,7 @@ function edCamSectionHTML(idx) {
 
 function edSetCamSlide(idx, key, value) {
     if (!edSlides[idx]) return;
+    edSnapshot();
     if (key === 'init') {
         edSlides[idx].camConfig = { pos: camPos, shape: camShape, size: camSize, mirror: camMirror };
     } else {
@@ -1262,6 +1442,7 @@ function edSetCamSlide(idx, key, value) {
 }
 
 function edClearCamSlide(idx) {
+    edSnapshot();
     if (edSlides[idx]) delete edSlides[idx].camConfig;
     const sec = document.getElementById('edCamSection');
     if (sec) sec.innerHTML = edCamSectionHTML(idx);
@@ -1270,6 +1451,7 @@ function edClearCamSlide(idx) {
 function edApplyTemplate(idx) {
     const tpl = SLIDE_TEMPLATES[idx];
     if (!tpl) return;
+    edSnapshot();
     // Si no hay slide seleccionado, crear uno nuevo
     if (edSelectedIdx < 0) {
         edSlides.push({ ...tpl.data });
@@ -1293,6 +1475,7 @@ function edSaveCurrentForm() {
 }
 
 function edAddSlide() {
+    edSnapshot();
     edSaveCurrentForm();
     // Mostrar selector de plantillas (sin crear slide todavía)
     edSelectedIdx = -1;
@@ -1301,6 +1484,7 @@ function edAddSlide() {
 }
 
 function edDelSlide(i) {
+    edSnapshot();
     edSlides.splice(i, 1);
     edSelectedIdx = Math.min(edSelectedIdx, edSlides.length - 1);
     renderEdSlideList();
