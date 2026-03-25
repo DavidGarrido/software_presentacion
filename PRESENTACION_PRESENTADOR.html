@@ -3,428 +3,1104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presentador - Censo DANE 2018</title>
+    <title>Presentador</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Segoe UI',Arial,sans-serif; background:#0d0d1a; color:white; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
 
-        .top-bar { background:#0f3460; padding:10px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
-        .top-bar h1 { font-size:1rem; color:#00d4ff; }
-        #obsStatus { font-size:0.8rem; padding:4px 10px; border-radius:10px; background:rgba(255,255,255,0.1); }
-        #obsStatus.connected { background:rgba(46,204,113,0.3); color:#2ecc71; }
-        #obsStatus.error { background:rgba(231,76,60,0.3); color:#e74c3c; }
+        /* ── Top bar ── */
+        .top-bar {
+            background:#0f3460; padding:8px 16px;
+            display:flex; align-items:center; justify-content:space-between;
+            flex-shrink:0; gap:8px; flex-wrap:wrap;
+        }
+        .top-bar-left  { display:flex; align-items:center; gap:10px; }
+        .top-bar-right { display:flex; align-items:center; gap:8px; }
+        .app-title { font-size:0.95rem; color:#00d4ff; font-weight:600; white-space:nowrap; }
+        .badge {
+            font-size:0.72rem; padding:3px 9px; border-radius:10px;
+            background:rgba(255,255,255,0.1); white-space:nowrap;
+        }
+        .badge.ok  { background:rgba(46,204,113,0.25); color:#2ecc71; }
+        .badge.err { background:rgba(231,76,60,0.25);  color:#e74c3c; }
+        .badge.rec { background:rgba(231,76,60,0.35);  color:#ff6b6b; animation:blink 1s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.55} }
+        .top-btn {
+            padding:5px 12px; border:none; border-radius:6px; cursor:pointer;
+            font-size:0.78rem; font-weight:600; transition:all 0.15s;
+        }
 
+        /* ── Layout principal ── */
         .main { display:flex; flex:1; overflow:hidden; }
 
-        /* Panel izquierdo: vista previa */
-        .preview-panel { flex:1.4; display:flex; flex-direction:column; padding:15px; gap:10px; overflow-y:auto; }
+        /* Panel izquierdo */
+        .left-panel { width:220px; flex-shrink:0; display:flex; flex-direction:column; background:#0a0a15; border-right:1px solid #1a1a30; overflow:hidden; }
 
-        /* Fila: miniaturas + preview principal */
-        .preview-row { display:flex; gap:8px; flex:1; min-height:0; }
-        .preview-main { flex:1; display:flex; flex-direction:column; gap:10px; min-width:0; }
+        .pres-header { padding:10px 10px 6px; border-bottom:1px solid #1a1a30; flex-shrink:0; }
+        .pres-name { font-size:0.78rem; color:#aaa; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .pres-actions { display:flex; gap:4px; }
+        .pres-actions button {
+            flex:1; padding:5px 4px; border:none; border-radius:5px; cursor:pointer;
+            font-size:0.7rem; font-weight:600;
+        }
 
-        /* Tira de miniaturas */
-        .thumb-strip { width:136px; flex-shrink:0; overflow-y:auto; display:flex; flex-direction:column; gap:5px; padding:4px; background:#0a0a15; border-radius:10px; border:1px solid #222; }
-        .thumb-item { position:relative; width:124px; height:70px; overflow:hidden; border-radius:5px; cursor:pointer; border:2px solid transparent; flex-shrink:0; background:#0d0d1a; transition:border-color 0.15s; }
+        .thumb-strip { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:4px; padding:6px; }
+        .thumb-item {
+            position:relative; width:100%; padding-top:56.25%;
+            border-radius:5px; cursor:pointer; border:2px solid transparent;
+            background:#0d0d1a; transition:border-color 0.15s; overflow:hidden; flex-shrink:0;
+        }
         .thumb-item:hover { border-color:#555; }
         .thumb-item.active { border-color:#00d4ff; }
-        .thumb-item iframe { width:1280px; height:720px; border:none; transform:scale(0.097); transform-origin:top left; pointer-events:none; }
-        .thumb-num { position:absolute; bottom:2px; right:3px; font-size:0.6rem; color:rgba(255,255,255,0.75); background:rgba(0,0,0,0.55); padding:1px 4px; border-radius:3px; line-height:1.4; }
+        .thumb-item iframe {
+            position:absolute; top:0; left:0;
+            width:1280px; height:720px; border:none;
+            transform:scale(0.154); transform-origin:top left;
+            pointer-events:none;
+        }
+        .thumb-num {
+            position:absolute; bottom:2px; right:3px;
+            font-size:0.58rem; color:rgba(255,255,255,0.7);
+            background:rgba(0,0,0,0.6); padding:1px 4px; border-radius:3px;
+        }
 
-        .slide-preview { background:#1a1a2e; border-radius:12px; border:2px solid #333; overflow:hidden; aspect-ratio:16/9; position:relative; }
-        .slide-preview iframe { width:100%; height:100%; border:none; pointer-events:none; transform-origin:top left; }
+        /* Panel central */
+        .center-panel { flex:1; display:flex; flex-direction:column; padding:12px; gap:8px; overflow:hidden; min-width:0; }
 
-        .slide-info { background:#1a1a2e; border-radius:10px; padding:12px; }
-        .slide-info .slide-title { color:#ffd700; font-weight:bold; font-size:1rem; margin-bottom:5px; }
-        .slide-counter-disp { color:#aaa; font-size:0.85rem; }
+        .slide-preview {
+            background:#1a1a2e; border-radius:10px; border:2px solid #333;
+            overflow:hidden; aspect-ratio:16/9; position:relative; flex:1; min-height:0;
+        }
+        .slide-preview iframe { width:100%; height:100%; border:none; }
 
-        .controls { display:flex; gap:8px; }
-        .btn { flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer; font-size:0.9rem; font-weight:bold; transition:all 0.2s; }
-        .btn-primary { background:#00d4ff; color:#1a1a2e; }
-        .btn-primary:hover { background:#00b8d9; }
-        .btn-secondary { background:#0f3460; color:white; }
-        .btn-secondary:hover { background:#1a4a80; }
-        .btn-danger { background:#e74c3c; color:white; }
-        .btn-danger:hover { background:#c0392b; }
-        .btn-success { background:#2ecc71; color:#1a1a2e; }
-        .help-text { color:#555; font-size:0.75rem; text-align:center; margin-top:5px; }
+        .slide-meta { background:#1a1a2e; border-radius:8px; padding:10px 12px; flex-shrink:0; }
+        .slide-title { color:#ffd700; font-weight:700; font-size:0.95rem; margin-bottom:3px; }
+        .slide-counter { color:#888; font-size:0.8rem; }
 
-        /* Panel derecho: notas */
-        .notes-panel { width:340px; background:#111; border-left:1px solid #222; display:flex; flex-direction:column; overflow-y:auto; padding:15px; gap:12px; flex-shrink:0; }
-        .notes-title { color:#00d4ff; font-size:0.85rem; font-weight:bold; text-transform:uppercase; letter-spacing:1px; }
-        .notes-content { background:#1a1a2e; border-radius:10px; padding:14px; font-size:0.9rem; line-height:1.7; color:#ddd; flex:1; white-space:pre-wrap; }
+        .nav-controls { display:flex; gap:6px; flex-shrink:0; }
+        .nav-controls button {
+            flex:1; padding:9px; border:none; border-radius:7px; cursor:pointer;
+            font-size:0.85rem; font-weight:600; transition:all 0.15s;
+        }
+        .btn-nav     { background:#0f3460; color:white; }
+        .btn-nav:hover { background:#1a4a80; }
+        .btn-projector { background:#1a1a2e; color:#00d4ff; border:1px solid #00d4ff30; }
+        .btn-projector:hover { background:#00d4ff15; }
 
-        /* OBS Panel */
-        .obs-panel { background:#1a1a2e; border-radius:10px; padding:12px; border:1px solid #333; }
-        .obs-panel h3 { color:#ffd700; font-size:0.85rem; margin-bottom:8px; }
-        .obs-settings { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:8px; font-size:0.8rem; }
-        .obs-settings label { color:#aaa; }
-        .obs-settings input[type="text"] { width:65px; padding:4px 6px; background:#222; border:1px solid #444; border-radius:4px; color:white; font-size:0.8rem; }
-        .obs-settings input[type="password"] { width:110px; padding:4px 6px; background:#222; border:1px solid #444; border-radius:4px; color:white; font-size:0.8rem; }
-        .rec-controls { display:flex; gap:6px; margin-top:6px; }
-        .obs-btn { padding:7px 12px; border:none; border-radius:6px; cursor:pointer; font-size:0.8rem; font-weight:bold; }
-        .obs-btn.connect { background:#00d4ff; color:#1a1a2e; width:100%; }
-        .obs-btn.record { background:#e74c3c; color:white; flex:1; }
-        .obs-btn.record.recording { animation:blink 1s infinite; }
-        .obs-btn.stop { background:#555; color:white; flex:1; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.6} }
+        /* Panel derecho */
+        .right-panel {
+            width:300px; flex-shrink:0; background:#111;
+            border-left:1px solid #1a1a30; display:flex; flex-direction:column;
+            overflow-y:auto; padding:12px; gap:10px;
+        }
+
+        .panel-section { background:#1a1a2e; border-radius:9px; padding:11px; border:1px solid #2a2a40; }
+        .section-title { color:#00d4ff; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; }
+
+        .notes-content {
+            font-size:0.85rem; line-height:1.65; color:#ccc;
+            white-space:pre-wrap; min-height:60px; max-height:200px; overflow-y:auto;
+        }
+
+        /* Grabación */
+        .rec-mode-toggle { display:flex; gap:4px; margin-bottom:8px; }
+        .mode-btn {
+            flex:1; padding:5px; border:1px solid #333; border-radius:5px;
+            background:transparent; color:#888; font-size:0.72rem; cursor:pointer; transition:all 0.15s;
+        }
+        .mode-btn.active { background:#00d4ff20; border-color:#00d4ff; color:#00d4ff; }
+
+        .mic-row { display:flex; align-items:center; gap:6px; margin-bottom:8px; font-size:0.78rem; color:#aaa; }
+        .mic-dot { width:8px; height:8px; border-radius:50%; background:#555; flex-shrink:0; }
+        .mic-dot.active { background:#2ecc71; box-shadow:0 0 6px #2ecc71; }
+        .mic-toggle { padding:3px 8px; border:none; border-radius:4px; cursor:pointer; font-size:0.7rem; font-weight:600; background:#1a1a2e; color:#aaa; border:1px solid #333; }
+
+        .rec-btn-row { display:flex; gap:5px; }
+        .rec-btn {
+            flex:1; padding:8px; border:none; border-radius:6px; cursor:pointer;
+            font-size:0.78rem; font-weight:700; transition:all 0.15s;
+        }
+        .btn-start  { background:#e74c3c; color:white; }
+        .btn-start:hover { background:#c0392b; }
+        .btn-start.recording { animation:blink 1s infinite; }
+        .btn-stop   { background:#555; color:white; }
+        .btn-stop:hover:not(:disabled) { background:#666; }
+        .btn-stop:disabled { opacity:0.4; cursor:not-allowed; }
+
+        /* OBS */
+        .obs-fields { display:flex; gap:5px; margin-bottom:6px; font-size:0.75rem; }
+        .obs-fields label { color:#888; align-self:center; white-space:nowrap; }
+        .obs-fields input {
+            flex:1; padding:4px 6px; background:#222; border:1px solid #444;
+            border-radius:4px; color:white; font-size:0.75rem; min-width:0;
+        }
+        .obs-btn-row { display:flex; gap:4px; }
+        .obs-btn {
+            flex:1; padding:6px; border:none; border-radius:5px; cursor:pointer;
+            font-size:0.72rem; font-weight:700;
+        }
+        .obs-connect { background:#00d4ff; color:#1a1a2e; }
+        .obs-record  { background:#e74c3c; color:white; }
+        .obs-stop    { background:#555; color:white; }
+        .obs-stop:disabled { opacity:0.4; cursor:not-allowed; }
+
+        /* pear-desktop */
+        .pear-row { display:flex; gap:4px; }
+        .pear-btn {
+            flex:1; padding:5px; border:none; border-radius:5px; cursor:pointer;
+            font-size:0.78rem; font-weight:600; background:#1a1a2e; color:#aaa;
+            border:1px solid #333; transition:all 0.15s;
+        }
+        .pear-btn:hover { background:#2a2a40; color:white; }
+
+        /* ── Modales ── */
+        .modal-overlay {
+            position:fixed; inset:0; background:rgba(0,0,0,0.75);
+            display:flex; align-items:center; justify-content:center;
+            z-index:1000; padding:20px;
+        }
+        .modal-overlay.hidden { display:none; }
+        .modal {
+            background:#1a1a2e; border-radius:14px; border:1px solid #2a2a50;
+            width:100%; max-width:680px; max-height:90vh;
+            display:flex; flex-direction:column; overflow:hidden;
+        }
+        .modal-header {
+            background:#0f3460; padding:13px 18px;
+            display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+        }
+        .modal-header h2 { font-size:1rem; color:#ffd700; }
+        .modal-close {
+            background:none; border:none; color:white; font-size:1.4rem;
+            cursor:pointer; line-height:1;
+        }
+        .modal-body { padding:16px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:12px; }
+        .modal-footer { padding:12px 16px; border-top:1px solid #2a2a40; display:flex; gap:8px; justify-content:flex-end; flex-shrink:0; }
+
+        .field-group { display:flex; flex-direction:column; gap:4px; }
+        .field-group label { font-size:0.78rem; color:#aaa; }
+        .field-group input, .field-group textarea, .field-group select {
+            padding:7px 10px; background:#0d0d1a; border:1px solid #333;
+            border-radius:6px; color:white; font-size:0.85rem; font-family:inherit;
+            resize:vertical;
+        }
+        .field-group textarea { min-height:80px; }
+
+        .slide-list { display:flex; flex-direction:column; gap:5px; }
+        .slide-list-item {
+            display:flex; align-items:center; gap:6px; padding:7px 10px;
+            background:#0d0d1a; border-radius:6px; border:1px solid #2a2a40; cursor:pointer;
+        }
+        .slide-list-item:hover { border-color:#555; }
+        .slide-list-item.active { border-color:#00d4ff; background:#00d4ff10; }
+        .slide-list-item .sli-num { color:#555; font-size:0.75rem; width:20px; flex-shrink:0; }
+        .slide-list-item .sli-title { flex:1; font-size:0.85rem; color:#ddd; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .sli-del { background:none; border:none; color:#555; cursor:pointer; font-size:0.9rem; padding:0 2px; }
+        .sli-del:hover { color:#e74c3c; }
+
+        .btn-primary   { background:#00d4ff; color:#0d0d1a; padding:7px 14px; border:none; border-radius:6px; cursor:pointer; font-size:0.82rem; font-weight:700; }
+        .btn-secondary { background:#0f3460; color:white;   padding:7px 14px; border:none; border-radius:6px; cursor:pointer; font-size:0.82rem; font-weight:600; }
+        .btn-danger    { background:#e74c3c; color:white;   padding:7px 14px; border:none; border-radius:6px; cursor:pointer; font-size:0.82rem; font-weight:700; }
+
+        /* Lista de presentaciones */
+        .pres-list { display:flex; flex-direction:column; gap:5px; }
+        .pres-list-item {
+            display:flex; align-items:center; gap:8px; padding:8px 10px;
+            background:#0d0d1a; border-radius:7px; border:1px solid #2a2a40; cursor:pointer;
+        }
+        .pres-list-item:hover { border-color:#555; }
+        .pres-list-item.active { border-color:#00d4ff; background:#00d4ff0d; }
+        .pli-name { flex:1; font-size:0.85rem; color:#ddd; }
+        .pli-count { font-size:0.72rem; color:#666; }
+        .pli-btn { background:none; border:none; color:#555; cursor:pointer; font-size:0.85rem; padding:0 2px; }
+        .pli-btn:hover { color:#e74c3c; }
+
+        /* Grabaciones guardadas */
+        .rec-list { display:flex; flex-direction:column; gap:6px; }
+        .rec-item { background:#0d0d1a; border-radius:7px; padding:9px; border:1px solid #2a2a40; }
+        .rec-item-name { font-size:0.8rem; color:#ddd; margin-bottom:6px; }
+        .rec-item-actions { display:flex; gap:5px; }
+        .rec-item-actions button {
+            padding:4px 10px; border:none; border-radius:4px; cursor:pointer;
+            font-size:0.72rem; font-weight:600;
+        }
+
+        /* Slide editor expandido */
+        .slide-editor { display:flex; flex-direction:column; gap:8px; }
+
+        .hidden { display:none !important; }
     </style>
 </head>
 <body>
 
+<!-- ── TOP BAR ── -->
 <div class="top-bar">
-    <h1>Vista del Presentador — Censo DANE 2018</h1>
-    <span id="obsStatus">OBS: Desconectado</span>
+    <div class="top-bar-left">
+        <span class="app-title">🎥 Presentador</span>
+        <span id="recStatus" class="badge">Sin grabación</span>
+        <span id="obsStatus" class="badge">OBS: —</span>
+        <span id="pearStatus" class="badge">🍐 —</span>
+    </div>
+    <div class="top-bar-right">
+        <button class="top-btn" style="background:#1a1a2e;color:#00d4ff;border:1px solid #00d4ff30;" onclick="openModal('modalPresentaciones')">📂 Presentaciones</button>
+        <button class="top-btn" style="background:#1a1a2e;color:#ffd700;border:1px solid #ffd70030;" onclick="openModal('modalGrabaciones')">🎬 Grabaciones</button>
+    </div>
 </div>
 
+<!-- ── MAIN LAYOUT ── -->
 <div class="main">
-    <!-- Panel izquierdo -->
-    <div class="preview-panel">
-        <div class="preview-row">
-            <div id="thumbStrip" class="thumb-strip"></div>
-            <div class="preview-main">
-                <div class="slide-preview">
-                    <iframe src="PRESENTACION_CENSO.html" id="slideFrame"></iframe>
-                </div>
-                <div class="slide-info">
-                    <div class="slide-title" id="currentTitle">1. PORTADA</div>
-                    <div class="slide-counter-disp">Diapositiva <span id="currentNum">1</span> de <span id="totalNum">15</span></div>
-                </div>
+
+    <!-- Panel izquierdo: miniaturas -->
+    <div class="left-panel">
+        <div class="pres-header">
+            <div class="pres-name" id="presName">Sin presentación</div>
+            <div class="pres-actions">
+                <button style="background:#0f3460;color:white;" onclick="openModal('modalPresentaciones')">📂</button>
+                <button style="background:#00d4ff20;color:#00d4ff;border:1px solid #00d4ff30;" onclick="openEditorNueva()">+ Nueva</button>
+                <button style="background:#1a1a2e;color:#aaa;border:1px solid #333;" onclick="editarPresentacionActual()" title="Editar slides">✏️</button>
             </div>
         </div>
-
-        <div class="controls">
-            <button class="btn btn-primary" onclick="prevSlide()">◀ Anterior</button>
-            <button class="btn btn-primary" onclick="nextSlide()">Siguiente ▶</button>
-        </div>
-
-        <div class="controls">
-            <button class="btn btn-secondary" onclick="openProjector()">📺 Abrir Proyector</button>
-        </div>
-
-        <div class="controls" style="margin-top:5px;">
-            <select id="presSelector" onchange="cambiarPresentacion(this.value)"
-                style="flex:1;padding:9px;background:#0f3460;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">
-                <option value="PRESENTACION_CENSO.html">Censo DANE 2018</option>
-                <option value="PRESENTACION_INGLES.html">Villa de Leyva (English)</option>
-                <option value="PRESENTACION_BELEN.html">Testimonio de Belén</option>
-            </select>
-        </div>
-
-        <div class="controls">
-            <button class="btn btn-danger" onclick="abrirUltimaGrabacion()">🎬 Última grabación</button>
-        </div>
-
-        <p class="help-text">Usa las flechas ← → del teclado para navegar</p>
+        <div class="thumb-strip" id="thumbStrip"></div>
     </div>
 
-    <!-- Panel derecho: notas + OBS -->
-    <div class="notes-panel">
-        <div class="notes-title">Guión</div>
-        <div class="notes-content" id="notesContent">Cargando guión...</div>
+    <!-- Panel central: preview -->
+    <div class="center-panel">
+        <div class="slide-preview">
+            <iframe id="slideFrame" src="viewer.html"></iframe>
+        </div>
+        <div class="slide-meta">
+            <div class="slide-title" id="currentTitle">—</div>
+            <div class="slide-counter">Slide <span id="currentNum">0</span> de <span id="totalNum">0</span></div>
+        </div>
+        <div class="nav-controls">
+            <button class="btn-nav" onclick="prevSlide()">◀ Anterior</button>
+            <button class="btn-nav" onclick="nextSlide()">Siguiente ▶</button>
+            <button class="btn-projector" onclick="abrirProyector()">📺 Proyector</button>
+        </div>
+    </div>
 
-        <!-- OBS Panel -->
-        <div class="obs-panel">
-            <h3>🎥 Control OBS</h3>
-            <div class="obs-settings">
-                <label>Puerto:</label>
-                <input type="text" id="obsPort" value="4455">
-                <label>Contraseña:</label>
-                <input type="password" id="obsPassword" placeholder="(vacía si no hay)">
+    <!-- Panel derecho -->
+    <div class="right-panel">
+
+        <!-- Guión -->
+        <div class="panel-section">
+            <div class="section-title">Guión</div>
+            <div class="notes-content" id="notesContent">—</div>
+        </div>
+
+        <!-- Grabación -->
+        <div class="panel-section">
+            <div class="section-title">Grabación</div>
+            <div class="rec-mode-toggle">
+                <button class="mode-btn active" id="modeBrowser" onclick="setRecMode('browser')">🌐 Navegador</button>
+                <button class="mode-btn" id="modeOBS" onclick="setRecMode('obs')">🎥 OBS</button>
             </div>
-            <button class="obs-btn connect" onclick="connectOBS()">🔗 Conectar a OBS</button>
-            <div class="rec-controls hidden" id="recControls">
-                <button class="obs-btn record" id="recBtn" onclick="toggleRecording()">⏺ Iniciar Grabación</button>
-                <button class="obs-btn stop" id="stopBtn" onclick="stopRecording()" disabled>⏹ Detener</button>
+
+            <!-- Modo Navegador -->
+            <div id="recBrowserPanel">
+                <div class="mic-row">
+                    <div class="mic-dot" id="micDot"></div>
+                    <span id="micLabel" style="flex:1;">Micrófono no activo</span>
+                    <button class="mic-toggle" id="micToggle" onclick="toggleMic()">Activar</button>
+                </div>
+                <div class="rec-btn-row">
+                    <button class="rec-btn btn-start" id="browserRecBtn" onclick="browserToggleRec()">⏺ Grabar</button>
+                    <button class="rec-btn btn-stop" id="browserStopBtn" onclick="browserStopRec()" disabled>⏹ Detener</button>
+                </div>
             </div>
+
+            <!-- Modo OBS -->
+            <div id="recOBSPanel" class="hidden">
+                <div class="obs-fields">
+                    <label>Puerto</label>
+                    <input type="text" id="obsPort" value="4455" style="width:55px;flex:none;">
+                    <label>Pass</label>
+                    <input type="password" id="obsPass" placeholder="vacía si no">
+                </div>
+                <div class="obs-btn-row" style="margin-bottom:6px;">
+                    <button class="obs-btn obs-connect" onclick="obsConnect()">🔗 Conectar</button>
+                </div>
+                <div class="obs-btn-row" id="obsRecControls" style="display:none">
+                    <button class="obs-btn obs-record" id="obsRecBtn" onclick="obsToggleRec()">⏺ Iniciar</button>
+                    <button class="obs-btn obs-stop" id="obsStopBtn" onclick="obsStopRec()" disabled>⏹ Detener</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- pear-desktop -->
+        <div class="panel-section">
+            <div class="section-title">🍐 pear-desktop <span style="color:#555;font-size:0.7rem;font-weight:400;">(opcional)</span></div>
+            <div class="pear-row">
+                <button class="pear-btn" onclick="pearAction('previous')">⏮</button>
+                <button class="pear-btn" onclick="pearAction('play')">▶</button>
+                <button class="pear-btn" onclick="pearAction('pause')">⏸</button>
+                <button class="pear-btn" onclick="pearAction('next')">⏭</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: Lista de presentaciones
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalPresentaciones">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>📂 Presentaciones</h2>
+            <button class="modal-close" onclick="closeModal('modalPresentaciones')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn-primary" onclick="openEditorNueva(); closeModal('modalPresentaciones')">+ Nueva presentación</button>
+                <button class="btn-secondary" onclick="importarJSON()">⬆ Importar JSON</button>
+            </div>
+            <div class="pres-list" id="presList"></div>
         </div>
     </div>
 </div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: Editor de presentación
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalEditor">
+    <div class="modal" style="max-width:780px;">
+        <div class="modal-header">
+            <h2 id="editorTitle">Nueva presentación</h2>
+            <button class="modal-close" onclick="closeModal('modalEditor')">✕</button>
+        </div>
+        <div class="modal-body" style="flex-direction:row;gap:0;padding:0;overflow:hidden;height:500px;">
+
+            <!-- Lista de slides -->
+            <div style="width:200px;flex-shrink:0;background:#0a0a15;border-right:1px solid #2a2a40;display:flex;flex-direction:column;padding:10px;gap:6px;overflow:hidden;">
+                <input type="text" id="edPresName" placeholder="Nombre de la presentación"
+                    style="padding:6px 8px;background:#0d0d1a;border:1px solid #333;border-radius:5px;color:white;font-size:0.8rem;">
+                <div style="flex:1;overflow-y:auto;" id="edSlideList"></div>
+                <button class="btn-primary" style="width:100%;font-size:0.75rem;padding:6px;" onclick="edAddSlide()">+ Agregar slide</button>
+            </div>
+
+            <!-- Editor del slide seleccionado -->
+            <div style="flex:1;padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;" id="edSlideForm">
+                <p style="color:#555;font-size:0.85rem;text-align:center;margin-top:40px;">Selecciona o crea un slide</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="exportarPresentacion()">⬇ Exportar JSON</button>
+            <button class="btn-primary" onclick="guardarPresentacion()">💾 Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: Grabaciones guardadas
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalGrabaciones">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>🎬 Grabaciones guardadas</h2>
+            <button class="modal-close" onclick="closeModal('modalGrabaciones')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="rec-list" id="recList"></div>
+        </div>
+    </div>
+</div>
+
+<input type="file" id="importInput" accept=".json" style="display:none" onchange="onImportJSON(event)">
 
 <script>
-    // ── Mapa presentación → archivo JSON de diapositivas ─────────────────────
-    const slidesMap = {
-        'PRESENTACION_CENSO.html':   'slides_censo.json',
-        'PRESENTACION_INGLES.html':  'slides_ingles.json',
-        'PRESENTACION_BELEN.html':   'slides_belen.json',
-    };
+'use strict';
 
-    let slidesData = [];
-
-    let currentSlide = 0;
-    let projectorWindow = null;
-
-    function renderThumbs(src) {
-        const strip = document.getElementById('thumbStrip');
-        strip.innerHTML = '';
-        slidesData.forEach((s, i) => {
-            const item = document.createElement('div');
-            item.className = 'thumb-item' + (i === currentSlide ? ' active' : '');
-            item.id = `thumb-${i}`;
-            item.title = s.title;
-            item.onclick = () => { currentSlide = i; updateUI(); };
-
-            const ifrm = document.createElement('iframe');
-            ifrm.src = src;
-            ifrm.onload = () => { try { ifrm.contentWindow.showSlide(i); } catch(e){} };
-
-            const num = document.createElement('div');
-            num.className = 'thumb-num';
-            num.textContent = i + 1;
-
-            item.appendChild(ifrm);
-            item.appendChild(num);
-            strip.appendChild(item);
-        });
-    }
-
-    function updateUI() {
-        const data = slidesData[currentSlide];
-        document.getElementById('currentTitle').textContent = data.title;
-        document.getElementById('currentNum').textContent = currentSlide + 1;
-        document.getElementById('totalNum').textContent = slidesData.length;
-        document.getElementById('notesContent').textContent = data.notes;
-        // Actualizar miniatura activa
-        document.querySelectorAll('.thumb-item').forEach((el, i) => {
-            el.classList.toggle('active', i === currentSlide);
-        });
-        // Sincronizar iframe
-        try { document.getElementById('slideFrame').contentWindow.showSlide(currentSlide); } catch(e){}
-        // Sincronizar proyector
-        if (projectorWindow && !projectorWindow.closed) {
-            projectorWindow.postMessage({ action: 'goto', index: currentSlide }, '*');
-        }
-    }
-
-    function nextSlide() { if (currentSlide < slidesData.length - 1) { currentSlide++; updateUI(); } }
-    function prevSlide() { if (currentSlide > 0) { currentSlide--; updateUI(); } }
-
-    function openProjector() {
-        const src = document.getElementById('slideFrame').src.split('/').pop();
-        projectorWindow = window.open(`PRESENTACION_PROYECTOR.html?src=${src}`, 'proyector', 'width=1280,height=720');
-        setTimeout(() => updateUI(), 1500);
-    }
-
-    document.addEventListener('keydown', e => {
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
-        if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevSlide();
+// ═══════════════════════════════════════════════════════════════════
+// IndexedDB
+// ═══════════════════════════════════════════════════════════════════
+let _db = null;
+function openDB() {
+    if (_db) return Promise.resolve(_db);
+    return new Promise((res, rej) => {
+        const req = indexedDB.open('PresentacionesDB', 1);
+        req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('presentations'))
+                db.createObjectStore('presentations', { keyPath:'id' });
+            if (!db.objectStoreNames.contains('recordings'))
+                db.createObjectStore('recordings', { keyPath:'id' });
+        };
+        req.onsuccess = e => { _db = e.target.result; res(_db); };
+        req.onerror   = e => rej(e.target.error);
     });
+}
+async function dbGetAll(store) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+        const tx  = db.transaction(store, 'readonly');
+        const req = tx.objectStore(store).getAll();
+        req.onsuccess = e => res(e.target.result);
+        req.onerror   = e => rej(e.target.error);
+    });
+}
+async function dbGet(store, id) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+        const tx  = db.transaction(store, 'readonly');
+        const req = tx.objectStore(store).get(id);
+        req.onsuccess = e => res(e.target.result);
+        req.onerror   = e => rej(e.target.error);
+    });
+}
+async function dbPut(store, obj) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+        const tx  = db.transaction(store, 'readwrite');
+        const req = tx.objectStore(store).put(obj);
+        req.onsuccess = e => res(e.target.result);
+        req.onerror   = e => rej(e.target.error);
+    });
+}
+async function dbDelete(store, id) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+        const tx  = db.transaction(store, 'readwrite');
+        const req = tx.objectStore(store).delete(id);
+        req.onsuccess = e => res(e.target.result);
+        req.onerror   = e => rej(e.target.error);
+    });
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
-    // ── OBS WebSocket nativo ─────────────────────────────────────────────────
-    let obsWs = null;
-    let isRecording = false;
-    let obsConnected = false;
-    let obsReqId = 1;
-    const obsCallbacks = {};
+// ═══════════════════════════════════════════════════════════════════
+// Estado global
+// ═══════════════════════════════════════════════════════════════════
+let currentPres    = null;   // presentación activa { id, name, slides }
+let currentIndex   = 0;
+let projectorWin   = null;
 
-    async function sha256b64(text) {
-        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-        return btoa(String.fromCharCode(...new Uint8Array(buf)));
-    }
+// ═══════════════════════════════════════════════════════════════════
+// Carga y render de presentación
+// ═══════════════════════════════════════════════════════════════════
+function loadPresentacion(pres) {
+    currentPres  = pres;
+    currentIndex = 0;
+    document.getElementById('presName').textContent = pres.name;
+    renderThumbs();
+    sendToViewers({ action:'load', slides:pres.slides, index:0 });
+    updateUI();
+    closeModal('modalPresentaciones');
+}
 
-    function obsSend(op, data) { obsWs.send(JSON.stringify({ op, d: data })); }
+function sendToViewers(msg) {
+    try { document.getElementById('slideFrame').contentWindow.postMessage(msg, '*'); } catch(e){}
+    if (projectorWin && !projectorWin.closed) projectorWin.postMessage(msg, '*');
+}
 
-    function obsCall(requestType, requestData = {}) {
-        return new Promise((resolve, reject) => {
-            const id = String(obsReqId++);
-            obsCallbacks[id] = { resolve, reject };
-            obsSend(6, { requestType, requestId: id, requestData });
-        });
-    }
+function updateUI() {
+    if (!currentPres) return;
+    const s = currentPres.slides[currentIndex];
+    document.getElementById('currentTitle').textContent = s?.title || '—';
+    document.getElementById('currentNum').textContent   = currentIndex + 1;
+    document.getElementById('totalNum').textContent     = currentPres.slides.length;
+    document.getElementById('notesContent').textContent = s?.notes || '—';
 
-    async function connectOBS() {
-        const statusEl    = document.getElementById('obsStatus');
-        const recControls = document.getElementById('recControls');
-        const port        = document.getElementById('obsPort')?.value.trim() || '4455';
-        const password    = document.getElementById('obsPassword')?.value.trim() || '';
-        const wsUrl       = `ws://localhost:${port}`;
+    document.querySelectorAll('.thumb-item').forEach((el, i) => {
+        el.classList.toggle('active', i === currentIndex);
+        if (i === currentIndex) el.scrollIntoView({ block:'nearest' });
+    });
+}
 
-        statusEl.textContent = 'OBS: Conectando...';
-        statusEl.className = '';
+function renderThumbs() {
+    const strip = document.getElementById('thumbStrip');
+    strip.innerHTML = '';
+    if (!currentPres) return;
+    currentPres.slides.forEach((s, i) => {
+        const item = document.createElement('div');
+        item.className = 'thumb-item' + (i === currentIndex ? ' active' : '');
+        item.onclick = () => { currentIndex = i; sendToViewers({ action:'goto', index:i }); updateUI(); };
 
-        if (obsWs) { obsWs.close(); obsWs = null; obsConnected = false; }
-        obsWs = new WebSocket(wsUrl);
-
-        obsWs.onmessage = async (evt) => {
-            const msg = JSON.parse(evt.data);
-            // op 0 = Hello
-            if (msg.op === 0) {
-                const { challenge, salt } = msg.d.authentication;
-                const secret = await sha256b64(password + salt);
-                const auth   = await sha256b64(secret + challenge);
-                obsSend(1, { rpcVersion: 1, authentication: auth, eventSubscriptions: 64 });
-            }
-            // op 2 = Identified
-            if (msg.op === 2) {
-                obsConnected = true;
-                statusEl.textContent = 'OBS: Conectado ✓';
-                statusEl.className = 'connected';
-                recControls.classList.remove('hidden');
-                const status = await obsCall('GetRecordStatus');
-                isRecording = status.outputActive;
-                updateRecordButtons();
-            }
-            // op 5 = Event
-            if (msg.op === 5 && msg.d.eventType === 'RecordStateChanged') {
-                const state = msg.d.eventData.outputState;
-                if (state === 'OBS_WEBSOCKET_OUTPUT_STOPPED' && msg.d.eventData.outputPath) {
-                    const fileName = msg.d.eventData.outputPath.split('/').pop();
-                    const url = `http://localhost:8000/grabaciones/${encodeURIComponent(fileName)}`;
-                    showLastRecording(fileName, url);
-                }
-                isRecording = (state === 'OBS_WEBSOCKET_OUTPUT_STARTED');
-                updateRecordButtons();
-                // Sincronizar estado con servidor
-                fetch(isRecording ? '/api/iniciar' : '/api/detener').catch(() => {});
-            }
-            // op 7 = RequestResponse
-            if (msg.op === 7) {
-                const cb = obsCallbacks[msg.d.requestId];
-                if (cb) {
-                    delete obsCallbacks[msg.d.requestId];
-                    msg.d.requestStatus.result ? cb.resolve(msg.d.responseData) : cb.reject(msg.d.requestStatus);
-                }
-            }
+        const ifrm = document.createElement('iframe');
+        ifrm.src = 'viewer.html';
+        ifrm.onload = () => {
+            try { ifrm.contentWindow.postMessage({ action:'load', slides:currentPres.slides, index:i }, '*'); } catch(e){}
         };
 
-        obsWs.onerror = () => {
-            statusEl.textContent = 'OBS: Error';
-            statusEl.className = 'error';
-            alert('No se pudo conectar a OBS.\n\n1. ¿OBS está abierto?\n2. Herramientas → Servidor WebSocket → Habilitado\n3. Verifica puerto y contraseña');
-        };
+        const num = document.createElement('div');
+        num.className = 'thumb-num';
+        num.textContent = i + 1;
 
-        obsWs.onclose = () => {
-            if (obsConnected) {
-                obsConnected = false;
-                statusEl.textContent = 'OBS: Desconectado';
-                statusEl.className = 'error';
-                recControls.classList.add('hidden');
-            }
-        };
+        item.appendChild(ifrm);
+        item.appendChild(num);
+        strip.appendChild(item);
+    });
+}
+
+function nextSlide() {
+    if (!currentPres || currentIndex >= currentPres.slides.length - 1) return;
+    currentIndex++;
+    sendToViewers({ action:'goto', index:currentIndex });
+    updateUI();
+}
+function prevSlide() {
+    if (!currentPres || currentIndex <= 0) return;
+    currentIndex--;
+    sendToViewers({ action:'goto', index:currentIndex });
+    updateUI();
+}
+
+document.addEventListener('keydown', e => {
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevSlide();
+});
+
+function abrirProyector() {
+    if (!currentPres) { alert('Carga una presentación primero.'); return; }
+    projectorWin = window.open('viewer.html', 'proyector', 'width=1280,height=720');
+    projectorWin.addEventListener('load', () => {
+        projectorWin.postMessage({ action:'load', slides:currentPres.slides, index:currentIndex }, '*');
+    });
+    // fallback con timeout
+    setTimeout(() => sendToViewers({ action:'load', slides:currentPres.slides, index:currentIndex }), 1200);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Modales
+// ═══════════════════════════════════════════════════════════════════
+function openModal(id) {
+    document.getElementById(id).classList.remove('hidden');
+    if (id === 'modalPresentaciones') renderPresList();
+    if (id === 'modalGrabaciones')    renderRecList();
+}
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// Cerrar al hacer click fuera
+document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// Lista de presentaciones
+// ═══════════════════════════════════════════════════════════════════
+async function renderPresList() {
+    const list = document.getElementById('presList');
+    list.innerHTML = '<p style="color:#555;font-size:0.8rem;">Cargando…</p>';
+    const all = await dbGetAll('presentations');
+    if (!all.length) { list.innerHTML = '<p style="color:#555;font-size:0.8rem;">No hay presentaciones guardadas. Crea una nueva o importa un JSON.</p>'; return; }
+    list.innerHTML = '';
+    all.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'pres-list-item' + (currentPres?.id === p.id ? ' active' : '');
+        item.innerHTML = `
+            <span class="pli-name">${p.name}</span>
+            <span class="pli-count">${p.slides?.length || 0} slides</span>
+            <button class="pli-btn" title="Editar" onclick="event.stopPropagation(); openEditorExistente('${p.id}')">✏️</button>
+            <button class="pli-btn" title="Exportar" onclick="event.stopPropagation(); exportarPresById('${p.id}')">⬇</button>
+            <button class="pli-btn" title="Eliminar" onclick="event.stopPropagation(); eliminarPres('${p.id}')">🗑</button>`;
+        item.onclick = () => loadPresentacion(p);
+        list.appendChild(item);
+    });
+}
+
+async function eliminarPres(id) {
+    if (!confirm('¿Eliminar esta presentación?')) return;
+    await dbDelete('presentations', id);
+    if (currentPres?.id === id) { currentPres = null; document.getElementById('presName').textContent = 'Sin presentación'; document.getElementById('thumbStrip').innerHTML = ''; }
+    renderPresList();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Editor de presentación
+// ═══════════════════════════════════════════════════════════════════
+let edSlides = [];
+let edSelectedIdx = -1;
+let edEditingId   = null;
+
+function openEditorNueva() {
+    edEditingId   = null;
+    edSlides      = [];
+    edSelectedIdx = -1;
+    document.getElementById('editorTitle').textContent = 'Nueva presentación';
+    document.getElementById('edPresName').value = '';
+    renderEdSlideList();
+    edShowSlideForm(-1);
+    openModal('modalEditor');
+}
+
+async function openEditorExistente(id) {
+    const p = await dbGet('presentations', id);
+    if (!p) return;
+    edEditingId   = p.id;
+    edSlides      = JSON.parse(JSON.stringify(p.slides || []));
+    edSelectedIdx = edSlides.length ? 0 : -1;
+    document.getElementById('editorTitle').textContent = 'Editar: ' + p.name;
+    document.getElementById('edPresName').value = p.name;
+    renderEdSlideList();
+    edShowSlideForm(edSelectedIdx);
+    closeModal('modalPresentaciones');
+    openModal('modalEditor');
+}
+
+function editarPresentacionActual() {
+    if (!currentPres) return openEditorNueva();
+    openEditorExistente(currentPres.id);
+}
+
+function renderEdSlideList() {
+    const el = document.getElementById('edSlideList');
+    el.innerHTML = '';
+    edSlides.forEach((s, i) => {
+        const item = document.createElement('div');
+        item.className = 'slide-list-item' + (i === edSelectedIdx ? ' active' : '');
+        item.innerHTML = `<span class="sli-num">${i+1}</span><span class="sli-title">${s.title || 'Sin título'}</span><button class="sli-del" onclick="event.stopPropagation();edDelSlide(${i})">✕</button>`;
+        item.onclick = () => { edSaveCurrentForm(); edSelectedIdx = i; renderEdSlideList(); edShowSlideForm(i); };
+        el.appendChild(item);
+    });
+}
+
+function edShowSlideForm(idx) {
+    const form = document.getElementById('edSlideForm');
+    if (idx < 0 || !edSlides[idx]) {
+        form.innerHTML = '<p style="color:#555;font-size:0.85rem;text-align:center;margin-top:40px;">Selecciona o crea un slide</p>';
+        return;
     }
+    const s = edSlides[idx];
+    form.innerHTML = `
+        <div class="field-group">
+            <label>Título</label>
+            <input id="efTitle" value="${escHtml(s.title||'')}">
+        </div>
+        <div class="field-group">
+            <label>Contenido <span style="color:#666;font-size:0.72rem;">(cada línea = un punto)</span></label>
+            <textarea id="efContent" rows="5">${escHtml(s.content||'')}</textarea>
+        </div>
+        <div class="field-group">
+            <label>Guión / notas <span style="color:#666;font-size:0.72rem;">(solo para el presentador)</span></label>
+            <textarea id="efNotes" rows="4">${escHtml(s.notes||'')}</textarea>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <div class="field-group" style="flex:1;">
+                <label>Layout</label>
+                <select id="efLayout">
+                    <option value=""     ${!s.layout?'selected':''}>Bullets (defecto)</option>
+                    <option value="cover"    ${s.layout==='cover'?'selected':''}>Portada</option>
+                    <option value="highlight" ${s.layout==='highlight'?'selected':''}>Destacado</option>
+                    <option value="image"    ${s.layout==='image'?'selected':''}>Imagen</option>
+                </select>
+            </div>
+            <div class="field-group" style="flex:1;">
+                <label>Tag / etiqueta</label>
+                <input id="efTag" value="${escHtml(s.tag||'')}">
+            </div>
+        </div>
+        <div class="field-group">
+            <label>Fondo <span style="color:#666;font-size:0.72rem;">(color o gradiente CSS)</span></label>
+            <input id="efBg" value="${escHtml(s.bg||'#0d0d1a')}" placeholder="#0d0d1a">
+        </div>
+    `;
+}
 
-    async function toggleRecording() {
-        if (!obsConnected) { alert('Primero conecta con OBS'); return; }
-        if (isRecording) { await obsCall('StopRecord'); isRecording = false; }
-        else             { await obsCall('StartRecord'); isRecording = true; }
-        updateRecordButtons();
-    }
+function edSaveCurrentForm() {
+    if (edSelectedIdx < 0 || !edSlides[edSelectedIdx]) return;
+    const s = edSlides[edSelectedIdx];
+    s.title   = document.getElementById('efTitle')?.value   || '';
+    s.content = document.getElementById('efContent')?.value || '';
+    s.notes   = document.getElementById('efNotes')?.value   || '';
+    s.layout  = document.getElementById('efLayout')?.value  || '';
+    s.tag     = document.getElementById('efTag')?.value     || '';
+    s.bg      = document.getElementById('efBg')?.value      || '#0d0d1a';
+}
 
-    async function stopRecording() {
-        if (!obsConnected) return;
-        await obsCall('StopRecord');
-        isRecording = false;
-        updateRecordButtons();
-    }
+function edAddSlide() {
+    edSaveCurrentForm();
+    edSlides.push({ title:'Nuevo slide', content:'', notes:'', tag:'', layout:'', bg:'#0d0d1a' });
+    edSelectedIdx = edSlides.length - 1;
+    renderEdSlideList();
+    edShowSlideForm(edSelectedIdx);
+}
 
-    function updateRecordButtons() {
-        const recBtn  = document.getElementById('recBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        if (isRecording) {
-            recBtn.innerHTML = '⏺ Grabando...';
-            recBtn.classList.add('recording');
-            stopBtn.disabled = false;
-        } else {
-            recBtn.innerHTML = '⏺ Iniciar Grabación';
-            recBtn.classList.remove('recording');
-            stopBtn.disabled = true;
+function edDelSlide(i) {
+    edSlides.splice(i, 1);
+    edSelectedIdx = Math.min(edSelectedIdx, edSlides.length - 1);
+    renderEdSlideList();
+    edShowSlideForm(edSelectedIdx);
+}
+
+async function guardarPresentacion() {
+    edSaveCurrentForm();
+    const name = document.getElementById('edPresName').value.trim();
+    if (!name) { alert('Escribe un nombre para la presentación.'); return; }
+    const pres = {
+        id:        edEditingId || uid(),
+        name,
+        slides:    edSlides,
+        updatedAt: new Date().toISOString()
+    };
+    if (!edEditingId) pres.createdAt = pres.updatedAt;
+    await dbPut('presentations', pres);
+    closeModal('modalEditor');
+    loadPresentacion(pres);
+}
+
+function exportarPresById(id) { dbGet('presentations', id).then(p => { if (p) descargarJSON(p, p.name); }); }
+function exportarPresentacion() {
+    edSaveCurrentForm();
+    const name = document.getElementById('edPresName').value.trim() || 'presentacion';
+    descargarJSON({ id: edEditingId || uid(), name, slides: edSlides }, name);
+}
+
+function descargarJSON(obj, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], { type:'application/json' }));
+    a.download = name.replace(/[^a-z0-9]/gi,'_') + '.json';
+    a.click();
+}
+
+function importarJSON() { document.getElementById('importInput').click(); }
+async function onImportJSON(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+        const data = JSON.parse(await file.text());
+        if (!data.slides) throw new Error('JSON inválido: falta "slides"');
+        data.id = data.id || uid();
+        data.name = data.name || file.name.replace('.json','');
+        await dbPut('presentations', data);
+        renderPresList();
+        alert('Presentación importada: ' + data.name);
+    } catch(err) { alert('Error al importar: ' + err.message); }
+    e.target.value = '';
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ═══════════════════════════════════════════════════════════════════
+// Grabación — Modo Navegador (Opción B)
+// ═══════════════════════════════════════════════════════════════════
+let recMode          = 'browser';
+let micStream        = null;
+let displayStream    = null;
+let mediaRecorder    = null;
+let recChunks        = [];
+let recStartTime     = null;
+
+function setRecMode(mode) {
+    recMode = mode;
+    document.getElementById('modeBrowser').classList.toggle('active', mode === 'browser');
+    document.getElementById('modeOBS').classList.toggle('active', mode === 'obs');
+    document.getElementById('recBrowserPanel').classList.toggle('hidden', mode !== 'browser');
+    document.getElementById('recOBSPanel').classList.toggle('hidden', mode !== 'obs');
+}
+
+async function toggleMic() {
+    if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+        document.getElementById('micDot').classList.remove('active');
+        document.getElementById('micLabel').textContent = 'Micrófono no activo';
+        document.getElementById('micToggle').textContent = 'Activar';
+    } else {
+        try {
+            micStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
+            document.getElementById('micDot').classList.add('active');
+            document.getElementById('micLabel').textContent = 'Micrófono activo ✓';
+            document.getElementById('micToggle').textContent = 'Desactivar';
+        } catch(err) {
+            alert('No se pudo acceder al micrófono: ' + err.message);
         }
     }
+}
 
-    // ── Última grabación ─────────────────────────────────────────────────────
-    function showLastRecording(fileName, url) {
-        let panel = document.getElementById('lastRecordingPanel');
-        if (!panel) {
-            panel = document.createElement('div');
-            panel.id = 'lastRecordingPanel';
-            panel.style.cssText = 'background:#1a1a2e;padding:12px;border-radius:10px;margin-top:10px;border:1px solid #00d4ff;';
-            document.querySelector('.notes-panel').appendChild(panel);
-        }
-        panel.innerHTML = `
-            <p style="color:#ffd700;font-size:0.85rem;margin-bottom:6px;">🎬 Última grabación:</p>
-            <p style="color:#ddd;font-size:0.8rem;word-break:break-all;margin-bottom:8px;">${fileName}</p>
-            <button onclick="openVideoModal('${url}','${fileName}')"
-               style="width:100%;padding:8px;background:#00d4ff;color:#1a1a2e;border:none;
-                      border-radius:6px;font-weight:bold;font-size:0.85rem;cursor:pointer;">
-               ▶ Ver video
-            </button>`;
-        openVideoModal(url, fileName);
+async function browserToggleRec() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        browserStopRec();
+    } else {
+        await browserStartRec();
     }
+}
 
-    async function abrirUltimaGrabacion() {
+async function browserStartRec() {
+    // Pedir micrófono si no está activo
+    if (!micStream) {
         try {
-            const res  = await fetch('http://localhost:8000/grabaciones/');
-            const html = await res.text();
-            const matches = [...html.matchAll(/href="([^"]+\.mp4)"/g)];
-            if (matches.length === 0) { alert('No hay grabaciones aún.'); return; }
-            const lastVideo = matches[matches.length - 1][1];
-            openVideoModal('http://localhost:8000/grabaciones/' + lastVideo, lastVideo);
-        } catch(e) { alert('No se pudo cargar la última grabación.'); }
-    }
-
-    async function openVideoModal(url, fileName) {
-        document.getElementById('videoModal')?.remove();
-        let audioUrl = null;
-        try {
-            const res  = await fetch('/api/ultimo_audio');
-            const data = await res.json();
-            if (data.archivo) audioUrl = `http://localhost:8000/grabaciones/${encodeURIComponent(data.archivo)}`;
-        } catch(e) {}
-
-        const modal = document.createElement('div');
-        modal.id = 'videoModal';
-        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
-        modal.innerHTML = `
-            <div style="background:#1a1a2e;border-radius:16px;border:2px solid #00d4ff;width:100%;max-width:900px;overflow:hidden;">
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#0f3460;">
-                    <span style="color:#ffd700;font-weight:bold;">🎬 ${fileName}</span>
-                    <button onclick="document.getElementById('videoModal').remove()"
-                            style="background:transparent;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">✕</button>
-                </div>
-                <video id="modalVideo" controls style="width:100%;max-height:60vh;background:#000;display:block;" src="${url}"></video>
-                ${audioUrl ? `
-                <div style="padding:12px 20px;background:#0a0a15;display:flex;align-items:center;gap:12px;">
-                    <span style="color:#00d4ff;font-size:0.85rem;white-space:nowrap;">🎤 Audio celular:</span>
-                    <audio id="modalAudio" src="${audioUrl}" style="width:100%;height:32px;"></audio>
-                </div>` : `<div style="padding:10px 20px;background:#0a0a15;"><span style="color:#666;font-size:0.8rem;">Sin audio del celular</span></div>`}
-            </div>`;
-        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        document.body.appendChild(modal);
-
-        const video = document.getElementById('modalVideo');
-        const audio = document.getElementById('modalAudio');
-        if (video && audio) {
-            video.addEventListener('play',   () => audio.play());
-            video.addEventListener('pause',  () => audio.pause());
-            video.addEventListener('seeked', () => { audio.currentTime = video.currentTime; });
-            audio.addEventListener('play',   () => video.play());
-            audio.addEventListener('pause',  () => video.pause());
-        }
-        if (video) video.play().catch(() => {});
-    }
-
-    async function cambiarPresentacion(src) {
-        const jsonFile = slidesMap[src];
-        if (!jsonFile) return;
-        try {
-            slidesData = await fetch(jsonFile).then(r => r.json());
-        } catch(e) {
-            console.error('No se pudo cargar', jsonFile, e);
+            micStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
+            document.getElementById('micDot').classList.add('active');
+            document.getElementById('micLabel').textContent = 'Micrófono activo ✓';
+            document.getElementById('micToggle').textContent = 'Desactivar';
+        } catch(err) {
+            alert('Se necesita el micrófono para grabar. ' + err.message);
             return;
         }
-        currentSlide = 0;
-        document.getElementById('slideFrame').src = src;
-        if (projectorWindow && !projectorWindow.closed) {
-            projectorWindow.postMessage({ action: 'src', src }, '*');
-        }
-        setTimeout(() => { renderThumbs(src); updateUI(); }, 800);
     }
 
-    // Inicializar cargando el JSON de la presentación por defecto
-    (async () => {
-        await cambiarPresentacion('PRESENTACION_CENSO.html');
-        document.getElementById('presSelector').value = 'PRESENTACION_CENSO.html';
-    })();
+    // Captura de pantalla
+    let captureStream;
+    try {
+        captureStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { frameRate:30, displaySurface:'window' },
+            audio: true   // audio del sistema si el SO lo permite
+        });
+    } catch(err) {
+        if (err.name !== 'NotAllowedError') alert('Error al capturar pantalla: ' + err.message);
+        return;
+    }
+    displayStream = captureStream;
+
+    // Mezclar audio del sistema + micrófono
+    const ctx         = new AudioContext();
+    const dest        = ctx.createMediaStreamDestination();
+    const micSource   = ctx.createMediaStreamSource(micStream);
+    micSource.connect(dest);
+
+    const sysAudio = captureStream.getAudioTracks();
+    if (sysAudio.length) {
+        const sysSource = ctx.createMediaStreamSource(new MediaStream(sysAudio));
+        sysSource.connect(dest);
+    }
+
+    // Stream final: video de pantalla + audio mezclado
+    const finalStream = new MediaStream([
+        ...captureStream.getVideoTracks(),
+        ...dest.stream.getAudioTracks()
+    ]);
+
+    const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
+        .find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+
+    recChunks     = [];
+    recStartTime  = Date.now();
+    mediaRecorder = new MediaRecorder(finalStream, { mimeType });
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
+    mediaRecorder.onstop          = () => guardarGrabacion(mimeType, ctx);
+    mediaRecorder.start(1000);
+
+    document.getElementById('browserRecBtn').textContent = '⏺ Grabando…';
+    document.getElementById('browserRecBtn').classList.add('recording');
+    document.getElementById('browserStopBtn').disabled = false;
+    document.getElementById('recStatus').textContent = '🔴 Grabando';
+    document.getElementById('recStatus').className   = 'badge rec';
+
+    // Si la pantalla se detiene desde el browser, limpiar
+    captureStream.getVideoTracks()[0].addEventListener('ended', () => browserStopRec());
+
+    // Notificar pear-desktop
+    pearAction('previous').catch(()=>{});
+    pearAction('play').catch(()=>{});
+}
+
+function browserStopRec() {
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+    mediaRecorder.stop();
+    displayStream?.getTracks().forEach(t => t.stop());
+    displayStream = null;
+
+    document.getElementById('browserRecBtn').textContent = '⏺ Grabar';
+    document.getElementById('browserRecBtn').classList.remove('recording');
+    document.getElementById('browserStopBtn').disabled = true;
+    document.getElementById('recStatus').textContent = 'Guardando…';
+    document.getElementById('recStatus').className   = 'badge';
+
+    pearAction('pause').catch(()=>{});
+}
+
+async function guardarGrabacion(mimeType, ctx) {
+    try { ctx.close(); } catch(e){}
+    const blob = new Blob(recChunks, { type:mimeType });
+    const dur  = Math.round((Date.now() - recStartTime) / 1000);
+    const name = (currentPres?.name || 'grabacion') + '_' + new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
+    const rec  = {
+        id:             uid(),
+        name,
+        presentationId: currentPres?.id || null,
+        mimeType,
+        duration:       dur,
+        blob,
+        createdAt:      new Date().toISOString()
+    };
+    await dbPut('recordings', rec);
+    recChunks = [];
+    document.getElementById('recStatus').textContent = '✅ Guardada';
+    document.getElementById('recStatus').className   = 'badge ok';
+    setTimeout(() => {
+        document.getElementById('recStatus').textContent = 'Sin grabación';
+        document.getElementById('recStatus').className   = 'badge';
+    }, 4000);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// OBS WebSocket
+// ═══════════════════════════════════════════════════════════════════
+let obsWs        = null;
+let obsConnected = false;
+let obsRecording = false;
+let obsReqId     = 1;
+const obsCbs     = {};
+
+async function sha256b64(text) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
+function obsSend(op, d) { obsWs.send(JSON.stringify({ op, d })); }
+function obsCall(type, data={}) {
+    return new Promise((res, rej) => {
+        const id = String(obsReqId++);
+        obsCbs[id] = { res, rej };
+        obsSend(6, { requestType:type, requestId:id, requestData:data });
+    });
+}
+
+async function obsConnect() {
+    const port = document.getElementById('obsPort').value.trim() || '4455';
+    const pass = document.getElementById('obsPass').value.trim() || '';
+    if (obsWs) { obsWs.close(); obsWs = null; }
+    obsWs = new WebSocket(`ws://localhost:${port}`);
+    obsWs.onmessage = async evt => {
+        const msg = JSON.parse(evt.data);
+        if (msg.op === 0) {
+            const { challenge, salt } = msg.d.authentication;
+            const secret = await sha256b64(pass + salt);
+            const auth   = await sha256b64(secret + challenge);
+            obsSend(1, { rpcVersion:1, authentication:auth, eventSubscriptions:64 });
+        }
+        if (msg.op === 2) {
+            obsConnected = true;
+            document.getElementById('obsStatus').textContent = 'OBS ✓';
+            document.getElementById('obsStatus').className   = 'badge ok';
+            document.getElementById('obsRecControls').style.display = 'flex';
+            const st = await obsCall('GetRecordStatus');
+            obsRecording = st.outputActive;
+            updateObsBtns();
+        }
+        if (msg.op === 5 && msg.d.eventType === 'RecordStateChanged') {
+            const state = msg.d.eventData.outputState;
+            obsRecording = state === 'OBS_WEBSOCKET_OUTPUT_STARTED';
+            updateObsBtns();
+            if (obsRecording) { pearAction('previous').catch(()=>{}); pearAction('play').catch(()=>{}); }
+            else               pearAction('pause').catch(()=>{});
+            document.getElementById('recStatus').textContent = obsRecording ? '🔴 OBS Grabando' : 'Sin grabación';
+            document.getElementById('recStatus').className   = obsRecording ? 'badge rec' : 'badge';
+        }
+        if (msg.op === 7) {
+            const cb = obsCbs[msg.d.requestId];
+            if (cb) {
+                delete obsCbs[msg.d.requestId];
+                msg.d.requestStatus.result ? cb.res(msg.d.responseData) : cb.rej(msg.d.requestStatus);
+            }
+        }
+    };
+    obsWs.onerror = () => {
+        document.getElementById('obsStatus').textContent = 'OBS: Error';
+        document.getElementById('obsStatus').className   = 'badge err';
+    };
+    obsWs.onclose = () => {
+        if (obsConnected) {
+            obsConnected = false;
+            document.getElementById('obsStatus').textContent = 'OBS: —';
+            document.getElementById('obsStatus').className   = 'badge';
+            document.getElementById('obsRecControls').style.display = 'none';
+        }
+    };
+}
+
+async function obsToggleRec() {
+    if (!obsConnected) { alert('Primero conecta con OBS'); return; }
+    if (obsRecording) { await obsCall('StopRecord'); obsRecording = false; }
+    else              { await obsCall('StartRecord'); obsRecording = true; }
+    updateObsBtns();
+}
+async function obsStopRec() {
+    if (!obsConnected) return;
+    await obsCall('StopRecord');
+    obsRecording = false;
+    updateObsBtns();
+}
+function updateObsBtns() {
+    document.getElementById('obsRecBtn').textContent = obsRecording ? '⏺ Grabando…' : '⏺ Iniciar';
+    document.getElementById('obsRecBtn').classList.toggle('recording', obsRecording);
+    document.getElementById('obsStopBtn').disabled = !obsRecording;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// pear-desktop
+// ═══════════════════════════════════════════════════════════════════
+async function pearAction(action) {
+    const res = await fetch(`http://localhost:26538/api/v1/${action}`, { method:'POST' });
+    document.getElementById('pearStatus').textContent = '🍐 ✓';
+    document.getElementById('pearStatus').className   = 'badge ok';
+    setTimeout(() => {
+        document.getElementById('pearStatus').textContent = '🍐 —';
+        document.getElementById('pearStatus').className   = 'badge';
+    }, 2000);
+    return res;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Lista de grabaciones guardadas
+// ═══════════════════════════════════════════════════════════════════
+async function renderRecList() {
+    const list = document.getElementById('recList');
+    list.innerHTML = '<p style="color:#555;font-size:0.8rem;">Cargando…</p>';
+    const all = await dbGetAll('recordings');
+    if (!all.length) { list.innerHTML = '<p style="color:#555;font-size:0.8rem;">No hay grabaciones guardadas.</p>'; return; }
+    list.innerHTML = '';
+    [...all].reverse().forEach(r => {
+        const min = String(Math.floor(r.duration/60)).padStart(2,'0');
+        const sec = String(r.duration%60).padStart(2,'0');
+        const item = document.createElement('div');
+        item.className = 'rec-item';
+        item.innerHTML = `
+            <div class="rec-item-name">🎬 ${r.name} <span style="color:#555;font-size:0.72rem;">(${min}:${sec})</span></div>
+            <div class="rec-item-actions">
+                <button style="background:#0f3460;color:white;" onclick="reproducirGrabacion('${r.id}')">▶ Ver</button>
+                <button style="background:#00d4ff20;color:#00d4ff;border:1px solid #00d4ff30;" onclick="descargarGrabacion('${r.id}')">⬇ Descargar</button>
+                <button style="background:#e74c3c20;color:#e74c3c;border:1px solid #e74c3c30;" onclick="eliminarGrabacion('${r.id}')">🗑</button>
+            </div>`;
+        list.appendChild(item);
+    });
+}
+
+async function reproducirGrabacion(id) {
+    const r = await dbGet('recordings', id);
+    if (!r) return;
+    const url = URL.createObjectURL(r.blob);
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${r.name}</title>
+        <style>*{margin:0;padding:0}body{background:#000;display:flex;align-items:center;justify-content:center;height:100vh;}
+        video{max-width:100%;max-height:100vh;}</style></head>
+        <body><video src="${url}" controls autoplay></video></body></html>`);
+}
+
+async function descargarGrabacion(id) {
+    const r = await dbGet('recordings', id);
+    if (!r) return;
+    const ext = r.mimeType.includes('mp4') ? 'mp4' : 'webm';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(r.blob);
+    a.download = r.name + '.' + ext;
+    a.click();
+}
+
+async function eliminarGrabacion(id) {
+    if (!confirm('¿Eliminar esta grabación?')) return;
+    await dbDelete('recordings', id);
+    renderRecList();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Inicialización
+// ═══════════════════════════════════════════════════════════════════
+(async () => {
+    // Cargar tutorial si no hay presentaciones
+    const all = await dbGetAll('presentations');
+    if (!all.length) {
+        try {
+            const tut = await fetch('tutorial.json').then(r => r.json());
+            await dbPut('presentations', tut);
+            loadPresentacion(tut);
+        } catch(e) { console.warn('No se pudo cargar tutorial.json', e); }
+    } else {
+        // Cargar la última modificada
+        const last = all.sort((a,b) => (b.updatedAt||'').localeCompare(a.updatedAt||''))[0];
+        loadPresentacion(last);
+    }
+})();
 </script>
 </body>
 </html>

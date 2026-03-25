@@ -1,17 +1,16 @@
-# Grabaciones de video y audio
+# Grabaciones locales
 grabaciones/
 *.mkv
 *.mp4
-*.webm
 *.opus
 
-# Estado del servidor
+# Estado del servidor local
 estado_grabacion.json
 
-# ngrok y celular (se regeneran con iniciar.sh)
+# Archivos locales regenerables
 celular.html
 
-# Python
+# Python (servidor local, no necesario en GitHub Pages)
 __pycache__/
 *.pyc
 *.pyo
@@ -21,5 +20,7 @@ __pycache__/
 Thumbs.db
 *.swp
 *.swo
-
 *.desktop
+
+# Documentos internos del proyecto original
+enlaces_dane/

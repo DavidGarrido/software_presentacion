@@ -1,0 +1,74 @@
+{
+  "id": "tutorial",
+  "name": "Tutorial — Cómo usar esta herramienta",
+  "slides": [
+    {
+      "title": "Bienvenido a tu herramienta de presentaciones",
+      "content": "Crea, edita y graba presentaciones directamente en el navegador\nSin instalaciones · Sin servidor · Todo se guarda localmente",
+      "tag": "Tutorial",
+      "layout": "cover",
+      "bg": "linear-gradient(135deg, #0d0d1a 0%, #0f3460 100%)"
+    },
+    {
+      "title": "¿Cómo funciona?",
+      "content": "Tus presentaciones se guardan en tu navegador (IndexedDB)\nNo necesitas cuenta ni servidor\nPuedes exportar e importar como archivos JSON\nFunciona sin conexión a internet",
+      "tag": "Concepto",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Crear una presentación",
+      "content": "Haz clic en '+ Nueva' en el panel izquierdo\nEscribe el nombre de la presentación\nAgrega slides con el botón '+ Slide'\nCada slide tiene: Título, Contenido y Guión (notas del presentador)",
+      "tag": "Paso 1",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Editar slides",
+      "content": "Título: el encabezado principal del slide\nContenido: cada línea se muestra como un punto\nGuión: solo lo ve el presentador, no aparece en pantalla\nLayouts disponibles: cover · bullets · highlight · image",
+      "tag": "Paso 2",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Navegar durante la presentación",
+      "content": "Flechas ← → del teclado para avanzar o retroceder\nHaz clic en las miniaturas del panel izquierdo para saltar a un slide\nAbre el proyector en ventana separada para pantalla completa\nEl proyector se sincroniza automáticamente",
+      "tag": "Paso 3",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Grabar con el navegador",
+      "content": "Haz clic en 'Grabar' → selecciona el modo 'Navegador'\nEl sistema pedirá permiso de micrófono y compartir pantalla\nSelecciona la ventana del proyector cuando el sistema lo pida\nLa grabación se guarda automáticamente al terminar",
+      "tag": "Grabación",
+      "bg": "linear-gradient(135deg, #0d0d1a 0%, #1a0a2e 100%)"
+    },
+    {
+      "title": "Grabar con OBS (opcional)",
+      "content": "Abre OBS y habilita el servidor WebSocket (Herramientas → Servidor WebSocket)\nEn el panel OBS ingresa el puerto y contraseña\nHaz clic en 'Conectar' y luego 'Iniciar Grabación'\nOBS captura con mayor calidad y control de escenas",
+      "tag": "Grabación con OBS",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Control de música con pear-desktop",
+      "content": "Instala pear-desktop en tu PC para control de música\nEl reproductor se controla automáticamente al iniciar y detener grabación\nPlay al iniciar · Pausa al terminar\nEs completamente opcional",
+      "tag": "Complemento",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Tus grabaciones",
+      "content": "Las grabaciones se guardan en el navegador (IndexedDB)\nAccede a ellas desde el botón '🎬 Grabaciones'\nPuedes reproducirlas o descargarlas como archivo .webm\nCompatibles con reproductores de video y editores",
+      "tag": "Grabaciones",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Exportar e importar",
+      "content": "Exporta cualquier presentación como archivo JSON\nCompartela con otros usuarios\nImporta JSONs para cargar presentaciones de otras personas\nEl formato es abierto y editable con cualquier editor de texto",
+      "tag": "Compartir",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "¡Listo para empezar!",
+      "content": "Haz clic en '+ Nueva' para crear tu primera presentación\nEsta presentación tutorial siempre estará disponible\nCualquier pregunta: consulta el README en GitHub",
+      "tag": "¡A presentar!",
+      "layout": "highlight",
+      "bg": "linear-gradient(135deg, #0d0d1a 0%, #0f3460 100%)"
+    }
+  ]
+}
