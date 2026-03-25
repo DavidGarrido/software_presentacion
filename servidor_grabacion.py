@@ -115,6 +115,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if path == '/api/iniciar':
             estado = {"grabando": True, "inicio": datetime.now().isoformat(), "fin": None}
             guardar_estado(estado)
+            # Reproducir música al iniciar grabación
+            try:
+                import urllib.request
+                urllib.request.urlopen(urllib.request.Request(
+                    'http://localhost:26538/api/v1/previous', data=b'',
+                    headers={'accept': '*/*'}, method='POST'), timeout=2)
+                urllib.request.urlopen(urllib.request.Request(
+                    'http://localhost:26538/api/v1/play', data=b'',
+                    headers={'accept': '*/*'}, method='POST'), timeout=2)
+                print('🎵 Música iniciada')
+            except Exception as e:
+                print(f'⚠️  Música: {e}')
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
@@ -128,6 +140,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             estado["grabando"] = False
             estado["fin"] = datetime.now().isoformat()
             guardar_estado(estado)
+            # Pausar música al terminar grabación
+            try:
+                import urllib.request
+                urllib.request.urlopen(urllib.request.Request(
+                    'http://localhost:26538/api/v1/pause', data=b'',
+                    headers={'accept': '*/*'}, method='POST'), timeout=2)
+                print('⏸️  Música pausada')
+            except Exception as e:
+                print(f'⚠️  Música: {e}')
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
