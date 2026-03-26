@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Analizador de Micrófono</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0d0d1a; color:white; font-family:'Segoe UI',sans-serif; padding:24px; }
+h2 { color:#00d4ff; margin-bottom:4px; }
+.sub { color:#555; font-size:0.82rem; margin-bottom:20px; }
+
+.card { background:#0f0f1e; border:1px solid #1e1e35; border-radius:10px; padding:16px; margin-bottom:14px; }
+.card-title { font-size:0.72rem; color:#666; margin-bottom:8px; text-transform:uppercase; letter-spacing:.05em; }
+
+button {
+    padding:9px 22px; border:none; border-radius:7px; cursor:pointer;
+    font-size:0.85rem; font-weight:600; transition:all 0.15s;
+}
+#btnStart { background:#00d4ff; color:#0d0d1a; }
+#btnStart:hover { background:#00eeff; }
+#btnStart:disabled { background:#1a3a3a; color:#555; cursor:default; }
+#btnCapture { background:#2ecc71; color:#0d0d1a; display:none; }
+#btnCapture:hover { background:#3ddd82; }
+
+.status { font-size:0.8rem; color:#aaa; margin-top:8px; }
+.status span { color:#00d4ff; }
+
+canvas { width:100%; border-radius:6px; display:block; }
+
+.meters { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.meter { background:#0a0a15; border:1px solid #1e1e35; border-radius:8px; padding:12px; text-align:center; }
+.meter-val { font-size:1.4rem; font-weight:700; margin:4px 0; }
+.meter-lbl { font-size:0.68rem; color:#555; }
+.ok   { color:#2ecc71; }
+.warn { color:#f39c12; }
+.bad  { color:#e74c3c; }
+
+.freq-bands { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; margin-top:8px; }
+.band { background:#0a0a15; border:1px solid #1e1e35; border-radius:5px; padding:5px 2px; text-align:center; }
+.band-bar-wrap { height:40px; display:flex; align-items:flex-end; justify-content:center; margin-bottom:3px; }
+.band-bar { width:70%; border-radius:2px 2px 0 0; transition:height 0.08s; }
+.band-hz { font-size:0.58rem; color:#555; }
+.band-db { font-size:0.62rem; color:#aaa; margin-top:2px; }
+
+.suggestion { background:#0a1a0a; border:1px solid #1a3a1a; border-radius:8px; padding:14px; display:none; }
+.suggestion h3 { color:#2ecc71; font-size:0.88rem; margin-bottom:8px; }
+.sug-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #0f2a0f; font-size:0.8rem; }
+.sug-row:last-child { border:none; }
+.sug-key { color:#aaa; }
+.sug-val { color:#00d4ff; font-weight:600; }
+.copy-btn { margin-top:10px; background:#1a3a1a; color:#2ecc71; border:1px solid #2a5a2a; padding:6px 14px; font-size:0.75rem; border-radius:5px; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<h2>🎙 Analizador de Micrófono</h2>
+<p class="sub">Mide el ruido de fondo y sugiere los parámetros óptimos para el reductor</p>
+
+<div class="card">
+    <div class="card-title">Control</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button id="btnStart" onclick="startAnalysis()">▶ Iniciar micrófono</button>
+        <button id="btnCapture" onclick="captureNoise()">📸 Capturar ruido de fondo</button>
+        <div class="status" id="status">Presiona iniciar y quédate en <span>silencio</span> unos segundos</div>
+    </div>
+</div>
+
+<!-- Espectro en tiempo real -->
+<div class="card">
+    <div class="card-title">Espectro de frecuencias (tiempo real)</div>
+    <canvas id="specCanvas" height="140"></canvas>
+</div>
+
+<!-- Medidores -->
+<div class="card">
+    <div class="card-title">Niveles</div>
+    <div class="meters">
+        <div class="meter">
+            <div class="meter-lbl">Nivel actual</div>
+            <div class="meter-val" id="mCurrent">—</div>
+            <div class="meter-lbl">dB</div>
+        </div>
+        <div class="meter">
+            <div class="meter-lbl">Ruido de fondo</div>
+            <div class="meter-val" id="mNoise">—</div>
+            <div class="meter-lbl">dB (capturado)</div>
+        </div>
+        <div class="meter">
+            <div class="meter-lbl">Pico de voz</div>
+            <div class="meter-val" id="mPeak">—</div>
+            <div class="meter-lbl">dB (máximo)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Bandas de frecuencia -->
+<div class="card">
+    <div class="card-title">Bandas de frecuencia del ruido</div>
+    <div class="freq-bands" id="freqBands"></div>
+</div>
+
+<!-- Sugerencia -->
+<div class="suggestion" id="suggestion">
+    <h3>✅ Configuración sugerida para tu micrófono</h3>
+    <div id="sugRows"></div>
+    <button class="copy-btn" onclick="copySuggestion()">📋 Copiar valores</button>
+</div>
+
+<script>
+let audioCtx, analyser, source, stream;
+let animId;
+let noiseFloor  = null;   // dB capturado en silencio
+let peakVoice   = -100;
+let running     = false;
+let noiseFreqProfile = null; // array de dB por banda
+
+const BANDS = [
+    { hz:80,   label:'80Hz'  },
+    { hz:160,  label:'160Hz' },
+    { hz:300,  label:'300Hz' },
+    { hz:600,  label:'600Hz' },
+    { hz:1200, label:'1.2k'  },
+    { hz:2500, label:'2.5k'  },
+    { hz:5000, label:'5k'    },
+    { hz:10000,label:'10k'   },
+];
+
+// Crear tarjetas de bandas
+const bandsEl = document.getElementById('freqBands');
+BANDS.forEach((b,i) => {
+    bandsEl.innerHTML += `
+        <div class="band">
+            <div class="band-bar-wrap">
+                <div class="band-bar" id="bar${i}" style="height:0px;background:#2a2a50;"></div>
+            </div>
+            <div class="band-hz">${b.label}</div>
+            <div class="band-db" id="bdb${i}">—</div>
+        </div>`;
+});
+
+async function startAnalysis() {
+    document.getElementById('btnStart').disabled = true;
+    document.getElementById('status').innerHTML = 'Accediendo al micrófono…';
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            audio: { noiseSuppression: false, echoCancellation: false, autoGainControl: false },
+            video: false
+        });
+    } catch(e) {
+        document.getElementById('status').innerHTML = `<span style="color:#e74c3c">Error: ${e.message}</span>`;
+        document.getElementById('btnStart').disabled = false;
+        return;
+    }
+
+    audioCtx = new AudioContext();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 4096;
+    analyser.smoothingTimeConstant = 0.75;
+    source   = audioCtx.createMediaStreamSource(stream);
+    source.connect(analyser);
+    running  = true;
+
+    document.getElementById('btnCapture').style.display = 'inline-block';
+    document.getElementById('status').innerHTML = 'Micrófono activo. Quédate en <span>silencio</span> y presiona "Capturar ruido de fondo"';
+    drawLoop();
+}
+
+const canvas = document.getElementById('specCanvas');
+const cctx   = canvas.getContext('2d');
+
+function drawLoop() {
+    animId = requestAnimationFrame(drawLoop);
+    const buf = new Float32Array(analyser.frequencyBinCount);
+    analyser.getFloatFrequencyData(buf);
+
+    // Resize
+    canvas.width  = canvas.offsetWidth * devicePixelRatio;
+    canvas.height = 140 * devicePixelRatio;
+    cctx.scale(devicePixelRatio, devicePixelRatio);
+    const W = canvas.offsetWidth, H = 140;
+
+    cctx.fillStyle = '#0a0a15';
+    cctx.fillRect(0,0,W,H);
+
+    // Grid dB
+    [-20,-40,-60,-80,-100].forEach(db => {
+        const y = dbToY(db, H);
+        cctx.strokeStyle = '#1a1a30';
+        cctx.lineWidth = 1;
+        cctx.beginPath(); cctx.moveTo(0,y); cctx.lineTo(W,y); cctx.stroke();
+        cctx.fillStyle = '#333';
+        cctx.font = '9px sans-serif';
+        cctx.fillText(db+'dB', 2, y-2);
+    });
+
+    // Noise floor line
+    if (noiseFloor !== null) {
+        const y = dbToY(noiseFloor, H);
+        cctx.strokeStyle = '#e74c3c55';
+        cctx.setLineDash([4,4]);
+        cctx.lineWidth = 1;
+        cctx.beginPath(); cctx.moveTo(0,y); cctx.lineTo(W,y); cctx.stroke();
+        cctx.setLineDash([]);
+        cctx.fillStyle = '#e74c3c';
+        cctx.font = '9px sans-serif';
+        cctx.fillText('ruido', W-36, y-2);
+    }
+
+    // Espectro
+    const sampleRate = audioCtx.sampleRate;
+    const binHz = sampleRate / analyser.fftSize;
+    cctx.beginPath();
+    cctx.strokeStyle = '#00d4ff';
+    cctx.lineWidth = 1.5;
+    for (let i=1; i<buf.length; i++) {
+        const freq = i * binHz;
+        if (freq > 20000) break;
+        const x = Math.log10(freq/20) / Math.log10(20000/20) * W;
+        const y = dbToY(buf[i], H);
+        i === 1 ? cctx.moveTo(x,y) : cctx.lineTo(x,y);
+    }
+    cctx.stroke();
+    cctx.scale(1/devicePixelRatio, 1/devicePixelRatio);
+
+    // Nivel RMS actual
+    let sumSq = 0;
+    buf.forEach(v => sumSq += v*v);
+    const rms = 10 * Math.log10(sumSq / buf.length);
+    const clampRms = Math.max(-100, Math.min(0, rms));
+    document.getElementById('mCurrent').textContent = clampRms.toFixed(1);
+    document.getElementById('mCurrent').className = 'meter-val ' + (clampRms > -30 ? 'ok' : clampRms > -60 ? 'warn' : 'bad');
+
+    if (clampRms > peakVoice) {
+        peakVoice = clampRms;
+        document.getElementById('mPeak').textContent = peakVoice.toFixed(1);
+    }
+
+    // Actualizar bandas
+    BANDS.forEach((b,i) => {
+        const binIdx = Math.round(b.hz / binHz);
+        const val    = buf[Math.min(binIdx, buf.length-1)];
+        const norm   = Math.max(0, Math.min(1, (val + 100) / 60));
+        const hue    = norm < 0.5 ? 200 : 200 - (norm-0.5)*2*160; // azul→rojo
+        document.getElementById(`bar${i}`).style.height  = (norm * 38) + 'px';
+        document.getElementById(`bar${i}`).style.background = `hsl(${hue},80%,55%)`;
+        document.getElementById(`bdb${i}`).textContent   = val.toFixed(0) + 'dB';
+    });
+}
+
+function dbToY(db, H) {
+    return H - ((db + 100) / 80) * H;
+}
+
+function captureNoise() {
+    if (!analyser) return;
+    const buf = new Float32Array(analyser.frequencyBinCount);
+    analyser.getFloatFrequencyData(buf);
+
+    // RMS del ruido
+    let sumSq = 0;
+    buf.forEach(v => sumSq += v*v);
+    noiseFloor = Math.max(-100, Math.min(-10, 10 * Math.log10(sumSq / buf.length)));
+
+    // Perfil por banda
+    const binHz = audioCtx.sampleRate / analyser.fftSize;
+    noiseFreqProfile = BANDS.map(b => {
+        const idx = Math.round(b.hz / binHz);
+        return buf[Math.min(idx, buf.length-1)];
+    });
+
+    document.getElementById('mNoise').textContent = noiseFloor.toFixed(1);
+    document.getElementById('mNoise').className   = 'meter-val ' + (noiseFloor > -50 ? 'bad' : noiseFloor > -70 ? 'warn' : 'ok');
+    document.getElementById('status').innerHTML   = `Ruido capturado: <span>${noiseFloor.toFixed(1)} dB</span>. Ahora habla normalmente para medir tu voz.`;
+
+    // Resetear pico para medir voz
+    peakVoice = -100;
+    document.getElementById('mPeak').textContent = '—';
+
+    // Generar sugerencia
+    setTimeout(generateSuggestion, 4000); // espera 4s para que el usuario hable
+}
+
+function generateSuggestion() {
+    if (noiseFloor === null) return;
+
+    // Encontrar frecuencia de corte: primera banda donde el ruido es significativo
+    let cutoffHz = 80;
+    if (noiseFreqProfile) {
+        for (let i = 0; i < noiseFreqProfile.length - 1; i++) {
+            if (noiseFreqProfile[i] > noiseFloor + 15) { // 15dB sobre el piso = ruido concentrado aquí
+                cutoffHz = BANDS[Math.min(i+1, BANDS.length-1)].hz;
+                break;
+            }
+        }
+    }
+    cutoffHz = Math.min(cutoffHz, 300);
+
+    // Nivel de reducción sugerido (0-100)
+    // Ruido muy bajo (<-75dB) → poca reducción; alto (>-45dB) → mucha
+    const noiseSeverity = Math.max(0, Math.min(1, (noiseFloor + 75) / 30));
+    const suggestedLevel = Math.round(noiseSeverity * 80 + 10);
+
+    // Diferencia voz-ruido
+    const snr = peakVoice > -90 ? (peakVoice - noiseFloor).toFixed(1) : '—';
+
+    const rows = [
+        { key:'Nivel de reducción de ruido', val: suggestedLevel + '%' },
+        { key:'Frecuencia de corte (highpass)', val: cutoffHz + ' Hz' },
+        { key:'Ruido de fondo medido', val: noiseFloor.toFixed(1) + ' dB' },
+        { key:'Pico de voz medido', val: peakVoice > -90 ? peakVoice.toFixed(1) + ' dB' : '— (habla al mic)' },
+        { key:'Relación señal/ruido (SNR)', val: snr !== '—' ? snr + ' dB' : '— (habla al mic)' },
+        { key:'Calidad estimada', val: noiseSeverity < 0.3 ? '🟢 Buena' : noiseSeverity < 0.6 ? '🟡 Regular' : '🔴 Ruidosa' },
+    ];
+
+    const sugEl = document.getElementById('suggestion');
+    sugEl.style.display = 'block';
+    sugEl.dataset.level  = suggestedLevel;
+    sugEl.dataset.cutoff = cutoffHz;
+
+    document.getElementById('sugRows').innerHTML = rows.map(r =>
+        `<div class="sug-row"><span class="sug-key">${r.key}</span><span class="sug-val">${r.val}</span></div>`
+    ).join('');
+
+    document.getElementById('status').innerHTML =
+        `✅ Análisis completo. Nivel sugerido: <span>${suggestedLevel}%</span>`;
+}
+
+function copySuggestion() {
+    const el = document.getElementById('suggestion');
+    const txt = `Reductor de ruido: ${el.dataset.level}%\nHighpass: ${el.dataset.cutoff} Hz`;
+    navigator.clipboard.writeText(txt).then(() => {
+        document.querySelector('.copy-btn').textContent = '✓ Copiado';
+        setTimeout(() => document.querySelector('.copy-btn').textContent = '📋 Copiar valores', 2000);
+    });
+}
+</script>
+</body>
+</html>

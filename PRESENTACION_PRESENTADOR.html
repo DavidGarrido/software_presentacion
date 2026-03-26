@@ -381,6 +381,15 @@
 
             <!-- Modo Navegador -->
             <div id="recBrowserPanel">
+                <div style="margin-bottom:6px;display:flex;gap:4px;">
+                    <select id="micDeviceSelect"
+                        style="flex:1;padding:4px 6px;background:#0d0d1a;border:1px solid #2a2a40;border-radius:5px;color:#aaa;font-size:0.72rem;cursor:pointer;"
+                        onchange="onMicDeviceChange()">
+                        <option value="">🎙 Predeterminado</option>
+                    </select>
+                    <button onclick="populateMicDevices()" title="Refrescar dispositivos"
+                        style="padding:4px 7px;border:1px solid #2a2a40;border-radius:5px;background:#0d0d1a;color:#aaa;font-size:0.75rem;cursor:pointer;">🔄</button>
+                </div>
                 <div class="mic-row">
                     <div class="mic-dot" id="micDot"></div>
                     <span id="micLabel" style="flex:1;">Micrófono no activo</span>
@@ -1713,12 +1722,58 @@ let mediaRecorder    = null;
 let recChunks        = [];
 let recStartTime     = null;
 
+
 function setRecMode(mode) {
     recMode = mode;
     document.getElementById('modeBrowser').classList.toggle('active', mode === 'browser');
     document.getElementById('modeOBS').classList.toggle('active', mode === 'obs');
     document.getElementById('recBrowserPanel').classList.toggle('hidden', mode !== 'browser');
     document.getElementById('recOBSPanel').classList.toggle('hidden', mode !== 'obs');
+}
+
+let selectedMicDeviceId = '';
+
+async function populateMicDevices() {
+    let devices = await navigator.mediaDevices.enumerateDevices();
+    let audioInputs = devices.filter(d => d.kind === 'audioinput');
+
+    // Si los labels están vacíos el navegador necesita permiso — pedirlo
+    if (audioInputs.length && !audioInputs[0].label) {
+        try {
+            const tmp = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
+            tmp.getTracks().forEach(t => t.stop());
+            devices = await navigator.mediaDevices.enumerateDevices();
+            audioInputs = devices.filter(d => d.kind === 'audioinput');
+        } catch(e) { return; }
+    }
+
+    const sel = document.getElementById('micDeviceSelect');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">🎙 Predeterminado</option>';
+    audioInputs.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.deviceId;
+        opt.textContent = d.label || `Dispositivo ${d.deviceId.slice(0,6)}`;
+        sel.appendChild(opt);
+    });
+    if (prev) sel.value = prev;
+}
+
+// Refrescar si se conecta/desconecta un dispositivo
+navigator.mediaDevices.addEventListener('devicechange', () => populateMicDevices());
+// Intentar poblar al cargar (si ya hay permiso guardado)
+populateMicDevices();
+
+function onMicDeviceChange() {
+    selectedMicDeviceId = document.getElementById('micDeviceSelect').value;
+    // Si el mic ya estaba activo, reiniciarlo con el nuevo dispositivo
+    if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+        document.getElementById('micDot').classList.remove('active');
+        document.getElementById('micLabel').textContent = 'Cambiado — presiona Activar';
+        document.getElementById('micToggle').textContent = 'Activar';
+    }
 }
 
 async function toggleMic() {
@@ -1730,10 +1785,17 @@ async function toggleMic() {
         document.getElementById('micToggle').textContent = 'Activar';
     } else {
         try {
-            micStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
+            const constraints = { audio: selectedMicDeviceId
+                ? { deviceId: { exact: selectedMicDeviceId } }
+                : true, video:false };
+            micStream = await navigator.mediaDevices.getUserMedia(constraints);
             document.getElementById('micDot').classList.add('active');
-            document.getElementById('micLabel').textContent = 'Micrófono activo ✓';
+            const sel = document.getElementById('micDeviceSelect');
+            const label = sel.options[sel.selectedIndex]?.text || 'Micrófono';
+            document.getElementById('micLabel').textContent = label + ' ✓';
             document.getElementById('micToggle').textContent = 'Desactivar';
+            // Poblar lista si aún no tiene labels
+            populateMicDevices();
         } catch(err) {
             alert('No se pudo acceder al micrófono: ' + err.message);
         }
@@ -1752,7 +1814,8 @@ async function browserStartRec() {
     // Pedir micrófono si no está activo
     if (!micStream) {
         try {
-            micStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
+            const _mc = selectedMicDeviceId ? { deviceId:{ exact:selectedMicDeviceId } } : true;
+            micStream = await navigator.mediaDevices.getUserMedia({ audio:_mc, video:false });
             document.getElementById('micDot').classList.add('active');
             document.getElementById('micLabel').textContent = 'Micrófono activo ✓';
             document.getElementById('micToggle').textContent = 'Desactivar';
@@ -1775,9 +1838,9 @@ async function browserStartRec() {
     }
     displayStream = captureStream;
 
-    // Audio: mezclar sistema + micrófono
-    const audioCtx = new AudioContext();
-    const dest     = audioCtx.createMediaStreamDestination();
+    // Audio: mezclar sistema + micrófono (con reducción de ruido si está activa)
+    const audioCtx   = new AudioContext();
+    const dest       = audioCtx.createMediaStreamDestination();
     audioCtx.createMediaStreamSource(micStream).connect(dest);
     const sysAudio = captureStream.getAudioTracks();
     if (sysAudio.length) {
