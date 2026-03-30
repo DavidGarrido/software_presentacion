@@ -395,6 +395,14 @@
                     <span id="micLabel" style="flex:1;">Micrófono no activo</span>
                     <button class="mic-toggle" id="micToggle" onclick="toggleMic()">Activar</button>
                 </div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                    <label style="font-size:0.78rem;color:#aaa;">Calidad:</label>
+                    <select id="recQuality" style="font-size:0.78rem;padding:2px 4px;background:#2a2a3a;color:#fff;border:1px solid #444;border-radius:4px;">
+                        <option value="1080">1080p — Alta (más RAM)</option>
+                        <option value="720" selected>720p — Media (recomendada)</option>
+                        <option value="480">480p — Baja (menos RAM)</option>
+                    </select>
+                </div>
                 <div class="rec-btn-row">
                     <button class="rec-btn btn-start" id="browserRecBtn" onclick="browserToggleRec()">⏺ Grabar</button>
                     <button class="rec-btn btn-stop" id="browserStopBtn" onclick="browserStopRec()" disabled>⏹ Detener</button>
@@ -627,8 +635,16 @@ function loadPresentacion(pres) {
     currentPres  = pres;
     currentIndex = 0;
     document.getElementById('presName').textContent = pres.name;
+    // Si la presentación tiene viewer personalizado, cargarlo en el iframe
+    const viewerSrc = pres.viewer || 'viewer.html';
+    const slideFrame = document.getElementById('slideFrame');
+    if (slideFrame.src !== viewerSrc && !slideFrame.src.endsWith(viewerSrc)) {
+        slideFrame.src = viewerSrc;
+        slideFrame.onload = () => sendToViewers({ action:'load', slides:pres.slides, index:0 });
+    } else {
+        sendToViewers({ action:'load', slides:pres.slides, index:0 });
+    }
     renderThumbs();
-    sendToViewers({ action:'load', slides:pres.slides, index:0 });
     updateUI();
     closeModal('modalPresentaciones');
 }
@@ -720,7 +736,8 @@ document.addEventListener('keydown', e => {
 
 function abrirProyector() {
     if (!currentPres) { alert('Carga una presentación primero.'); return; }
-    projectorWin = window.open('viewer.html', 'proyector', 'width=1280,height=720');
+    const viewerSrc = currentPres.viewer || 'viewer.html';
+    projectorWin = window.open(viewerSrc, 'proyector', 'width=1280,height=720');
 
     const sendAll = () => {
         projectorWin.postMessage({ action:'load', slides:currentPres.slides, index:currentIndex }, '*');
@@ -1572,6 +1589,10 @@ async function toggleCamera() {
     } else {
         try {
             cameraStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:false });
+            const camTrack = cameraStream.getVideoTracks()[0];
+            const camCaps  = camTrack.getCapabilities?.() || {};
+            if (camCaps.focusMode?.includes('manual'))
+                await camTrack.applyConstraints({ advanced: [{ focusMode: 'manual' }] });
             cameraEnabled = true;
             document.getElementById('camDot').classList.add('active');
             document.getElementById('camLabel').textContent  = 'Cámara activa ✓';
@@ -1721,6 +1742,17 @@ let displayStream    = null;
 let mediaRecorder    = null;
 let recChunks        = [];
 let recStartTime     = null;
+let fileWritable     = null;
+
+const REC_QUALITY = {
+    '1080': { height: 1080, fps: 30, bps: 6_000_000 },
+    '720':  { height: 720,  fps: 30, bps: 3_000_000 },
+    '480':  { height: 480,  fps: 24, bps: 1_500_000 },
+};
+function getRecQuality() {
+    const v = document.getElementById('recQuality')?.value || '720';
+    return REC_QUALITY[v] || REC_QUALITY['720'];
+}
 
 
 function setRecMode(mode) {
@@ -1811,7 +1843,7 @@ async function browserToggleRec() {
 }
 
 async function browserStartRec() {
-    // Pedir micrófono si no está activo
+    // 1. Pedir micrófono si no está activo
     if (!micStream) {
         try {
             const _mc = selectedMicDeviceId ? { deviceId:{ exact:selectedMicDeviceId } } : true;
@@ -1821,11 +1853,13 @@ async function browserStartRec() {
             document.getElementById('micToggle').textContent = 'Desactivar';
         } catch(err) {
             alert('Se necesita el micrófono para grabar. ' + err.message);
+            try { await fileWritable.close(); } catch(_) {}
+            fileWritable = null;
             return;
         }
     }
 
-    // Captura de pantalla
+    // 3. Captura de pantalla
     let captureStream;
     try {
         captureStream = await navigator.mediaDevices.getDisplayMedia({
@@ -1834,6 +1868,8 @@ async function browserStartRec() {
         });
     } catch(err) {
         if (err.name !== 'NotAllowedError') alert('Error al capturar pantalla: ' + err.message);
+        try { await fileWritable.close(); } catch(_) {}
+        fileWritable = null;
         return;
     }
     displayStream = captureStream;
@@ -1847,20 +1883,24 @@ async function browserStartRec() {
         audioCtx.createMediaStreamSource(new MediaStream(sysAudio)).connect(dest);
     }
 
-    // Video de pantalla en elemento <video> para el canvas
+    const qual    = getRecQuality();
+    let rafId     = null;
+
+    // Canvas siempre activo para mantener video y audio en sincronía
     const screenVid = document.createElement('video');
     screenVid.srcObject = new MediaStream(captureStream.getVideoTracks());
     screenVid.muted = true;
     await new Promise(r => { screenVid.onloadedmetadata = r; });
     await screenVid.play();
 
-    // Canvas de composición al tamaño real de la captura
-    const canvas  = document.createElement('canvas');
-    canvas.width  = screenVid.videoWidth  || 1920;
-    canvas.height = screenVid.videoHeight || 1080;
+    const srcW  = screenVid.videoWidth  || 1920;
+    const srcH  = screenVid.videoHeight || 1080;
+    const scale = Math.min(1, qual.height / srcH);
+    const canvas = document.createElement('canvas');
+    canvas.width  = Math.round(srcW * scale);
+    canvas.height = Math.round(srcH * scale);
     const ctx2d   = canvas.getContext('2d');
 
-    // Elemento <video> para la cámara (si está activa)
     let camVid = null;
     if (cameraStream && cameraEnabled) {
         camVid = document.createElement('video');
@@ -1870,18 +1910,15 @@ async function browserStartRec() {
         await camVid.play();
     }
 
-    // Loop de composición pantalla + cámara
-    let rafId;
-    function drawFrame() {
+    // setInterval a los fps elegidos — no 60fps como requestAnimationFrame
+    rafId = setInterval(() => {
         ctx2d.drawImage(screenVid, 0, 0, canvas.width, canvas.height);
         if (camVid) drawCameraOverlay(ctx2d, canvas.width, canvas.height, camVid);
-        rafId = requestAnimationFrame(drawFrame);
-    }
-    drawFrame();
+    }, 1000 / qual.fps);
 
-    // Stream final: canvas video + audio mezclado
+    // Stream final: video + audio mezclado
     const finalStream = new MediaStream([
-        canvas.captureStream(30).getVideoTracks()[0],
+        canvas.captureStream(qual.fps).getVideoTracks()[0],
         ...dest.stream.getAudioTracks()
     ]);
 
@@ -1890,13 +1927,50 @@ async function browserStartRec() {
 
     recChunks    = [];
     recStartTime = Date.now();
-    mediaRecorder = new MediaRecorder(finalStream, { mimeType });
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
-    mediaRecorder.onstop = () => {
-        cancelAnimationFrame(rafId);
+    mediaRecorder = new MediaRecorder(finalStream, { mimeType, videoBitsPerSecond: qual.bps });
+    // Abrir archivo temporal en OPFS — escribe al disco sin acumular en RAM
+    const recName    = (currentPres?.name || 'grabacion') + '_' + new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
+    let opfsWritable = null;
+    let opfsFileName = recName + '.webm';
+    try {
+        const root = await navigator.storage.getDirectory();
+        const fh   = await root.getFileHandle(opfsFileName, { create: true });
+        opfsWritable = await fh.createWritable();
+    } catch(e) {
+        console.warn('OPFS no disponible, usando RAM:', e);
+    }
+
+    mediaRecorder.ondataavailable = async e => {
+        if (e.data.size > 0) {
+            if (opfsWritable) {
+                await opfsWritable.write(e.data);
+            } else {
+                recChunks.push(e.data);
+            }
+        }
+    };
+    mediaRecorder.onstop = async () => {
+        if (rafId) clearInterval(rafId);
         screenVid.srcObject = null;
-        if (camVid) camVid.srcObject = null;
-        guardarGrabacion(mimeType, audioCtx);
+        if (opfsWritable) {
+            await opfsWritable.close();
+            // Leer desde OPFS y descargar
+            try {
+                const root = await navigator.storage.getDirectory();
+                const fh   = await root.getFileHandle(opfsFileName);
+                const file = await fh.getFile();
+                const url  = URL.createObjectURL(file);
+                const a    = document.createElement('a');
+                a.href = url; a.download = opfsFileName; a.click();
+                setTimeout(async () => {
+                    URL.revokeObjectURL(url);
+                    try { await root.removeEntry(opfsFileName); } catch(_) {}
+                }, 15000);
+            } catch(e) { console.error('Error descargando desde OPFS:', e); }
+            guardarGrabacion(mimeType, audioCtx, true);
+        } else {
+            guardarGrabacion(mimeType, audioCtx, false);
+        }
     };
     mediaRecorder.start(1000);
 
@@ -1926,23 +2000,20 @@ function browserStopRec() {
     pearAction('pause').catch(()=>{});
 }
 
-async function guardarGrabacion(mimeType, ctx) {
+async function guardarGrabacion(mimeType, ctx, desdeOpfs = false) {
     try { ctx.close(); } catch(e){}
-    const blob = new Blob(recChunks, { type:mimeType });
-    const dur  = Math.round((Date.now() - recStartTime) / 1000);
-    const name = (currentPres?.name || 'grabacion') + '_' + new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
-    const rec  = {
-        id:             uid(),
-        name,
-        presentationId: currentPres?.id || null,
-        mimeType,
-        duration:       dur,
-        blob,
-        createdAt:      new Date().toISOString()
-    };
-    await dbPut('recordings', rec);
+    if (!desdeOpfs && recChunks.length > 0) {
+        // Fallback: descargar desde RAM
+        const blob = new Blob(recChunks, { type:mimeType });
+        const name = (currentPres?.name || 'grabacion') + '_' + new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
+        recChunks = [];
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement('a');
+        a.href = url; a.download = name + '.webm'; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
     recChunks = [];
-    document.getElementById('recStatus').textContent = '✅ Guardada';
+    document.getElementById('recStatus').textContent = '✅ Descargando…';
     document.getElementById('recStatus').className   = 'badge ok';
     setTimeout(() => {
         document.getElementById('recStatus').textContent = 'Sin grabación';

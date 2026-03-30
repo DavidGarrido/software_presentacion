@@ -320,6 +320,10 @@
         if (!camStream) {
             try {
                 camStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:false });
+                const vTrack = camStream.getVideoTracks()[0];
+                const vCaps  = vTrack.getCapabilities?.() || {};
+                if (vCaps.focusMode?.includes('manual'))
+                    await vTrack.applyConstraints({ advanced: [{ focusMode: 'manual' }] });
                 camFeed.srcObject = camStream;
             } catch(e) { return; }
         }
