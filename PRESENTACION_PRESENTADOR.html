@@ -257,14 +257,6 @@
         .pli-btn:hover { color:#e74c3c; }
 
         /* Grabaciones guardadas */
-        .rec-list { display:flex; flex-direction:column; gap:6px; }
-        .rec-item { background:#0d0d1a; border-radius:7px; padding:9px; border:1px solid #2a2a40; }
-        .rec-item-name { font-size:0.8rem; color:#ddd; margin-bottom:6px; }
-        .rec-item-actions { display:flex; gap:5px; }
-        .rec-item-actions button {
-            padding:4px 10px; border:none; border-radius:4px; cursor:pointer;
-            font-size:0.72rem; font-weight:600;
-        }
 
         /* Layout cards */
         .layout-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
@@ -327,7 +319,6 @@
     </div>
     <div class="top-bar-right">
         <button class="top-btn" style="background:#1a1a2e;color:#00d4ff;border:1px solid #00d4ff30;" onclick="openModal('modalPresentaciones')">📂 Presentaciones</button>
-        <button class="top-btn" style="background:#1a1a2e;color:#ffd700;border:1px solid #ffd70030;" onclick="openModal('modalGrabaciones')">🎬 Grabaciones</button>
     </div>
 </div>
 
@@ -548,17 +539,6 @@
 <!-- ══════════════════════════════════════════════════════
      MODAL: Grabaciones guardadas
 ══════════════════════════════════════════════════════ -->
-<div class="modal-overlay hidden" id="modalGrabaciones">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>🎬 Grabaciones guardadas</h2>
-            <button class="modal-close" onclick="closeModal('modalGrabaciones')">✕</button>
-        </div>
-        <div class="modal-body">
-            <div class="rec-list" id="recList"></div>
-        </div>
-    </div>
-</div>
 
 <input type="file" id="importInput" accept=".json" style="display:none" onchange="onImportJSON(event)">
 
@@ -577,8 +557,6 @@ function openDB() {
             const db = e.target.result;
             if (!db.objectStoreNames.contains('presentations'))
                 db.createObjectStore('presentations', { keyPath:'id' });
-            if (!db.objectStoreNames.contains('recordings'))
-                db.createObjectStore('recordings', { keyPath:'id' });
         };
         req.onsuccess = e => { _db = e.target.result; res(_db); };
         req.onerror   = e => rej(e.target.error);
@@ -635,6 +613,7 @@ let projectorWin   = null;
 function loadPresentacion(pres) {
     currentPres  = pres;
     currentIndex = 0;
+    localStorage.setItem('lastPresId', pres.id);
     document.getElementById('presName').textContent = pres.name;
     // Si la presentación tiene viewer personalizado, cargarlo en el iframe
     const viewerSrc = pres.viewer || 'viewer.html';
@@ -683,22 +662,45 @@ function renderThumbs() {
     const strip = document.getElementById('thumbStrip');
     strip.innerHTML = '';
     if (!currentPres) return;
+
+    // Ventana deslizante: carga iframes al entrar, los descarga al salir.
+    // rootMargin 150px = 1 slide de buffer arriba y abajo del área visible.
+    // Máximo ~5 iframes en memoria sin importar el total de slides.
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const ifrm = entry.target;
+            const i    = parseInt(ifrm.dataset.index);
+            if (entry.isIntersecting) {
+                // Entró al viewport → cargar si no está
+                if (!ifrm.dataset.loaded) {
+                    ifrm.dataset.loaded = '1';
+                    ifrm.src = 'viewer.html';
+                    ifrm.onload = () => {
+                        try { ifrm.contentWindow.postMessage({ action:'load', slides:currentPres.slides, index:i }, '*'); } catch(e){}
+                    };
+                }
+            } else {
+                // Salió del viewport → descargar para liberar memoria
+                if (ifrm.dataset.loaded) {
+                    ifrm.dataset.loaded = '';
+                    ifrm.src = '';
+                }
+            }
+        });
+    }, { root: strip, rootMargin: '150px 0px', threshold: 0.01 });
+
     currentPres.slides.forEach((s, i) => {
         const item = document.createElement('div');
         item.className = 'thumb-item' + (i === currentIndex ? ' active' : '');
         item.onclick = () => { currentIndex = i; sendToViewers({ action:'goto', index:i }); updateUI(); };
 
         const ifrm = document.createElement('iframe');
-        ifrm.src = 'viewer.html';
-        ifrm.onload = () => {
-            try { ifrm.contentWindow.postMessage({ action:'load', slides:currentPres.slides, index:i }, '*'); } catch(e){}
-        };
+        ifrm.dataset.index = i;
 
         const num = document.createElement('div');
         num.className = 'thumb-num';
         num.textContent = i + 1;
 
-        // Icono del layout
         const layoutEl = document.createElement('div');
         layoutEl.className = 'thumb-layout';
         layoutEl.innerHTML = `<span class="thumb-layout-icon">${layoutIcons[s.layout || ''] || '☰'}</span>${s.layout || 'bullets'}`;
@@ -708,6 +710,8 @@ function renderThumbs() {
         item.appendChild(layoutEl);
         item.appendChild(num);
         strip.appendChild(item);
+        // Observar después de estar en el DOM
+        observer.observe(ifrm);
     });
 }
 
@@ -758,7 +762,6 @@ function abrirProyector() {
 function openModal(id) {
     document.getElementById(id).classList.remove('hidden');
     if (id === 'modalPresentaciones') renderPresList();
-    if (id === 'modalGrabaciones')    renderRecList();
 }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
@@ -2141,56 +2144,6 @@ async function pearAction(action) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Lista de grabaciones guardadas
-// ═══════════════════════════════════════════════════════════════════
-async function renderRecList() {
-    const list = document.getElementById('recList');
-    list.innerHTML = '<p style="color:#555;font-size:0.8rem;">Cargando…</p>';
-    const all = await dbGetAll('recordings');
-    if (!all.length) { list.innerHTML = '<p style="color:#555;font-size:0.8rem;">No hay grabaciones guardadas.</p>'; return; }
-    list.innerHTML = '';
-    [...all].reverse().forEach(r => {
-        const min = String(Math.floor(r.duration/60)).padStart(2,'0');
-        const sec = String(r.duration%60).padStart(2,'0');
-        const item = document.createElement('div');
-        item.className = 'rec-item';
-        item.innerHTML = `
-            <div class="rec-item-name">🎬 ${r.name} <span style="color:#555;font-size:0.72rem;">(${min}:${sec})</span></div>
-            <div class="rec-item-actions">
-                <button style="background:#0f3460;color:white;" onclick="reproducirGrabacion('${r.id}')">▶ Ver</button>
-                <button style="background:#00d4ff20;color:#00d4ff;border:1px solid #00d4ff30;" onclick="descargarGrabacion('${r.id}')">⬇ Descargar</button>
-                <button style="background:#e74c3c20;color:#e74c3c;border:1px solid #e74c3c30;" onclick="eliminarGrabacion('${r.id}')">🗑</button>
-            </div>`;
-        list.appendChild(item);
-    });
-}
-
-async function reproducirGrabacion(id) {
-    const r = await dbGet('recordings', id);
-    if (!r) return;
-    const url = URL.createObjectURL(r.blob);
-    const win = window.open('', '_blank');
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${r.name}</title>
-        <style>*{margin:0;padding:0}body{background:#000;display:flex;align-items:center;justify-content:center;height:100vh;}
-        video{max-width:100%;max-height:100vh;}</style></head>
-        <body><video src="${url}" controls autoplay></video></body></html>`);
-}
-
-async function descargarGrabacion(id) {
-    const r = await dbGet('recordings', id);
-    if (!r) return;
-    const ext = r.mimeType.includes('mp4') ? 'mp4' : 'webm';
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(r.blob);
-    a.download = r.name + '.' + ext;
-    a.click();
-}
-
-async function eliminarGrabacion(id) {
-    if (!confirm('¿Eliminar esta grabación?')) return;
-    await dbDelete('recordings', id);
-    renderRecList();
-}
 
 // ═══════════════════════════════════════════════════════════════════
 // Inicialización
@@ -2205,8 +2158,10 @@ async function eliminarGrabacion(id) {
             loadPresentacion(tut);
         } catch(e) { console.warn('No se pudo cargar tutorial.json', e); }
     } else {
-        // Cargar la última modificada
-        const last = all.sort((a,b) => (b.updatedAt||'').localeCompare(a.updatedAt||''))[0];
+        // Cargar la última usada (localStorage) o la más reciente si no hay registro
+        const lastId = localStorage.getItem('lastPresId');
+        const last   = (lastId && all.find(p => p.id === lastId))
+                     || all.sort((a,b) => (b.updatedAt||'').localeCompare(a.updatedAt||''))[0];
         loadPresentacion(last);
     }
 })();
