@@ -615,14 +615,24 @@ function loadPresentacion(pres) {
     currentIndex = 0;
     localStorage.setItem('lastPresId', pres.id);
     document.getElementById('presName').textContent = pres.name;
-    // Si la presentación tiene viewer personalizado, cargarlo en el iframe
-    const viewerSrc = pres.viewer || 'viewer.html';
     const slideFrame = document.getElementById('slideFrame');
-    if (slideFrame.src !== viewerSrc && !slideFrame.src.endsWith(viewerSrc)) {
-        slideFrame.src = viewerSrc;
-        slideFrame.onload = () => sendToViewers({ action:'load', slides:pres.slides, index:0 });
+    // Si el viewer fue importado como HTML, inyectarlo directamente
+    if (pres.viewerHtml) {
+        const blob = new Blob([pres.viewerHtml], { type: 'text/html' });
+        const blobUrl = URL.createObjectURL(blob);
+        slideFrame.src = blobUrl;
+        slideFrame.onload = () => {
+            URL.revokeObjectURL(blobUrl);
+            sendToViewers({ action:'load', slides:pres.slides, index:0 });
+        };
     } else {
-        sendToViewers({ action:'load', slides:pres.slides, index:0 });
+        const viewerSrc = pres.viewer || 'viewer.html';
+        if (slideFrame.src !== viewerSrc && !slideFrame.src.endsWith(viewerSrc)) {
+            slideFrame.src = viewerSrc;
+            slideFrame.onload = () => sendToViewers({ action:'load', slides:pres.slides, index:0 });
+        } else {
+            sendToViewers({ action:'load', slides:pres.slides, index:0 });
+        }
     }
     renderThumbs();
     updateUI();
@@ -741,7 +751,11 @@ document.addEventListener('keydown', e => {
 
 function abrirProyector() {
     if (!currentPres) { alert('Carga una presentación primero.'); return; }
-    const viewerSrc = currentPres.viewer || 'viewer.html';
+    let viewerSrc = currentPres.viewer || 'viewer.html';
+    if (currentPres.viewerHtml) {
+        const blob = new Blob([currentPres.viewerHtml], { type: 'text/html' });
+        viewerSrc = URL.createObjectURL(blob);
+    }
     projectorWin = window.open(viewerSrc, 'proyector', 'width=1280,height=720');
 
     const sendAll = () => {
@@ -1560,6 +1574,24 @@ async function onImportJSON(e) {
         if (!data.slides) throw new Error('JSON inválido: falta "slides"');
         data.id = data.id || uid();
         data.name = data.name || file.name.replace('.json','');
+
+        // Si el JSON referencia un viewer personalizado, pedirlo al usuario
+        if (data.viewer && !data.viewerHtml) {
+            const viewerName = data.viewer.split('/').pop();
+            const pick = await new Promise(resolve => {
+                const inp = document.createElement('input');
+                inp.type = 'file'; inp.accept = '.html';
+                inp.onchange = ev => resolve(ev.target.files[0] || null);
+                inp.oncancel  = () => resolve(null);
+                if (confirm(`Esta presentación usa el viewer "${viewerName}".\n¿Quieres seleccionarlo ahora para que funcione sin servidor?`)) {
+                    inp.click();
+                } else { resolve(null); }
+            });
+            if (pick) {
+                data.viewerHtml = await pick.text();
+            }
+        }
+
         await dbPut('presentations', data);
         renderPresList();
         alert('Presentación importada: ' + data.name);
