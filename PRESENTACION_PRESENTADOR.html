@@ -1734,15 +1734,22 @@ function drawCameraOverlay(ctx, w, h, camVid) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Grabación — Modo Navegador (Opción B)
+// Grabación — Modo Navegador
+// rAF throttled → canvas → captureStream → MediaRecorder (A/V sync)
+//                                        → ondataavailable → OPFS
+// Sin acumulación en RAM. Sync garantizada por MediaRecorder.
 // ═══════════════════════════════════════════════════════════════════
-let recMode          = 'browser';
-let micStream        = null;
-let displayStream    = null;
-let mediaRecorder    = null;
-let recChunks        = [];
-let recStartTime     = null;
-let fileWritable     = null;
+let recMode       = 'browser';
+let micStream     = null;
+let displayStream = null;
+let recStartTime  = null;
+let isRecording   = false;
+
+let _mediaRecorder = null;
+let _opfsWritable  = null;
+let _opfsFileName  = null;
+let _rafId         = null;
+let _audioCtx      = null;
 
 const REC_QUALITY = {
     '1080': { height: 1080, fps: 30, bps: 6_000_000 },
@@ -1791,10 +1798,11 @@ async function populateMicDevices() {
     if (prev) sel.value = prev;
 }
 
-// Refrescar si se conecta/desconecta un dispositivo
-navigator.mediaDevices.addEventListener('devicechange', () => populateMicDevices());
-// Intentar poblar al cargar (si ya hay permiso guardado)
-populateMicDevices();
+// Refrescar si se conecta/desconecta un dispositivo (solo en contexto seguro)
+if (navigator.mediaDevices) {
+    navigator.mediaDevices.addEventListener('devicechange', () => populateMicDevices());
+    populateMicDevices();
+}
 
 function onMicDeviceChange() {
     selectedMicDeviceId = document.getElementById('micDeviceSelect').value;
@@ -1834,59 +1842,50 @@ async function toggleMic() {
     }
 }
 
-async function browserToggleRec() {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-        browserStopRec();
-    } else {
-        await browserStartRec();
-    }
+function browserToggleRec() {
+    if (isRecording) browserStopRec();
+    else             browserStartRec();
 }
 
 async function browserStartRec() {
-    // 1. Pedir micrófono si no está activo
+    const qual = getRecQuality();
+
+    // 1. Micrófono
     if (!micStream) {
         try {
-            const _mc = selectedMicDeviceId ? { deviceId:{ exact:selectedMicDeviceId } } : true;
-            micStream = await navigator.mediaDevices.getUserMedia({ audio:_mc, video:false });
+            const c = selectedMicDeviceId ? { deviceId: { exact: selectedMicDeviceId } } : true;
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: c, video: false });
             document.getElementById('micDot').classList.add('active');
             document.getElementById('micLabel').textContent = 'Micrófono activo ✓';
             document.getElementById('micToggle').textContent = 'Desactivar';
         } catch(err) {
             alert('Se necesita el micrófono para grabar. ' + err.message);
-            try { await fileWritable.close(); } catch(_) {}
-            fileWritable = null;
             return;
         }
     }
 
-    // 3. Captura de pantalla
+    // 2. Captura de pantalla
     let captureStream;
     try {
         captureStream = await navigator.mediaDevices.getDisplayMedia({
-            video: { frameRate:30, displaySurface:'window' },
-            audio: true
+            video: { frameRate: qual.fps, displaySurface: 'window' },
+            audio: true,
         });
     } catch(err) {
         if (err.name !== 'NotAllowedError') alert('Error al capturar pantalla: ' + err.message);
-        try { await fileWritable.close(); } catch(_) {}
-        fileWritable = null;
         return;
     }
     displayStream = captureStream;
 
-    // Audio: mezclar sistema + micrófono (con reducción de ruido si está activa)
-    const audioCtx   = new AudioContext();
-    const dest       = audioCtx.createMediaStreamDestination();
-    audioCtx.createMediaStreamSource(micStream).connect(dest);
-    const sysAudio = captureStream.getAudioTracks();
-    if (sysAudio.length) {
-        audioCtx.createMediaStreamSource(new MediaStream(sysAudio)).connect(dest);
-    }
+    // 3. Mezcla de audio (micrófono + sistema) en AudioContext
+    _audioCtx = new AudioContext();
+    const dest = _audioCtx.createMediaStreamDestination();
+    _audioCtx.createMediaStreamSource(micStream).connect(dest);
+    const sysTracks = captureStream.getAudioTracks();
+    if (sysTracks.length)
+        _audioCtx.createMediaStreamSource(new MediaStream(sysTracks)).connect(dest);
 
-    const qual    = getRecQuality();
-    let rafId     = null;
-
-    // Canvas siempre activo para mantener video y audio en sincronía
+    // 4. Canvas escalado para composición pantalla + cámara
     const screenVid = document.createElement('video');
     screenVid.srcObject = new MediaStream(captureStream.getVideoTracks());
     screenVid.muted = true;
@@ -1896,10 +1895,13 @@ async function browserStartRec() {
     const srcW  = screenVid.videoWidth  || 1920;
     const srcH  = screenVid.videoHeight || 1080;
     const scale = Math.min(1, qual.height / srcH);
+    const W = Math.round(srcW * scale / 2) * 2;
+    const H = Math.round(srcH * scale / 2) * 2;
+
     const canvas = document.createElement('canvas');
-    canvas.width  = Math.round(srcW * scale);
-    canvas.height = Math.round(srcH * scale);
-    const ctx2d   = canvas.getContext('2d');
+    canvas.width  = W;
+    canvas.height = H;
+    const ctx2d = canvas.getContext('2d');
 
     let camVid = null;
     if (cameraStream && cameraEnabled) {
@@ -1910,69 +1912,97 @@ async function browserStartRec() {
         await camVid.play();
     }
 
-    // setInterval a los fps elegidos — no 60fps como requestAnimationFrame
-    rafId = setInterval(() => {
-        ctx2d.drawImage(screenVid, 0, 0, canvas.width, canvas.height);
-        if (camVid) drawCameraOverlay(ctx2d, canvas.width, canvas.height, camVid);
-    }, 1000 / qual.fps);
-
-    // Stream final: video + audio mezclado
-    const finalStream = new MediaStream([
-        canvas.captureStream(qual.fps).getVideoTracks()[0],
-        ...dest.stream.getAudioTracks()
-    ]);
-
-    const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
-        .find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
-
-    recChunks    = [];
-    recStartTime = Date.now();
-    mediaRecorder = new MediaRecorder(finalStream, { mimeType, videoBitsPerSecond: qual.bps });
-    // Abrir archivo temporal en OPFS — escribe al disco sin acumular en RAM
-    const recName    = (currentPres?.name || 'grabacion') + '_' + new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
-    let opfsWritable = null;
-    let opfsFileName = recName + '.webm';
+    // 5. OPFS — escribe chunks directo al disco sin acumular en RAM
+    const recName = (currentPres?.name || 'grabacion') + '_'
+                  + new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
+    _opfsFileName = recName + '.webm';
     try {
-        const root = await navigator.storage.getDirectory();
-        const fh   = await root.getFileHandle(opfsFileName, { create: true });
-        opfsWritable = await fh.createWritable();
+        const root    = await navigator.storage.getDirectory();
+        const fh      = await root.getFileHandle(_opfsFileName, { create: true });
+        _opfsWritable = await fh.createWritable();
     } catch(e) {
         console.warn('OPFS no disponible, usando RAM:', e);
+        _opfsWritable = null;
     }
 
-    mediaRecorder.ondataavailable = async e => {
-        if (e.data.size > 0) {
-            if (opfsWritable) {
-                await opfsWritable.write(e.data);
-            } else {
-                recChunks.push(e.data);
-            }
+    // 6. rAF throttled al fps objetivo — dibuja solo cuando toca, sin drift
+    const frameDur = 1000 / qual.fps;
+    let lastDraw   = 0;
+    function drawFrame(now) {
+        if (now - lastDraw >= frameDur) {
+            ctx2d.drawImage(screenVid, 0, 0, W, H);
+            if (camVid) drawCameraOverlay(ctx2d, W, H, camVid);
+            lastDraw = now;
+        }
+        _rafId = requestAnimationFrame(drawFrame);
+    }
+    _rafId = requestAnimationFrame(drawFrame);
+
+    // 7. Stream final: canvas (video) + AudioContext (audio mezclado)
+    //    MediaRecorder sincroniza A/V automáticamente al estar en el mismo stream
+    const finalStream = new MediaStream([
+        canvas.captureStream(qual.fps).getVideoTracks()[0],
+        ...dest.stream.getAudioTracks(),
+    ]);
+
+    const mimeType = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
+        .find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+
+    const recChunks = [];
+    _mediaRecorder = new MediaRecorder(finalStream, { mimeType, videoBitsPerSecond: qual.bps });
+
+    _mediaRecorder.ondataavailable = async e => {
+        if (e.data.size === 0) return;
+        if (_opfsWritable) {
+            await _opfsWritable.write(e.data);   // directo al disco
+        } else {
+            recChunks.push(e.data);              // fallback RAM
         }
     };
-    mediaRecorder.onstop = async () => {
-        if (rafId) clearInterval(rafId);
+
+    _mediaRecorder.onstop = async () => {
+        if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
         screenVid.srcObject = null;
-        if (opfsWritable) {
-            await opfsWritable.close();
+        if (camVid) camVid.srcObject = null;
+        try { _audioCtx?.close(); } catch(_) {}
+        _audioCtx = null;
+
+        if (_opfsWritable) {
+            await _opfsWritable.close();
+            _opfsWritable = null;
             // Leer desde OPFS y descargar
             try {
                 const root = await navigator.storage.getDirectory();
-                const fh   = await root.getFileHandle(opfsFileName);
+                const fh   = await root.getFileHandle(_opfsFileName);
                 const file = await fh.getFile();
                 const url  = URL.createObjectURL(file);
                 const a    = document.createElement('a');
-                a.href = url; a.download = opfsFileName; a.click();
+                a.href = url; a.download = _opfsFileName; a.click();
                 setTimeout(async () => {
                     URL.revokeObjectURL(url);
-                    try { await root.removeEntry(opfsFileName); } catch(_) {}
-                }, 15000);
+                    try { await root.removeEntry(_opfsFileName); } catch(_) {}
+                }, 15_000);
             } catch(e) { console.error('Error descargando desde OPFS:', e); }
-            guardarGrabacion(mimeType, audioCtx, true);
         } else {
-            guardarGrabacion(mimeType, audioCtx, false);
+            // Fallback: descargar desde RAM
+            const blob = new Blob(recChunks, { type: mimeType });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url; a.download = _opfsFileName; a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 10_000);
         }
+
+        document.getElementById('recStatus').textContent = '✅ Descargando…';
+        document.getElementById('recStatus').className   = 'badge ok';
+        setTimeout(() => {
+            document.getElementById('recStatus').textContent = 'Sin grabación';
+            document.getElementById('recStatus').className   = 'badge';
+        }, 5_000);
     };
-    mediaRecorder.start(1000);
+
+    _mediaRecorder.start(1000); // chunk cada 1s → escribe al disco cada segundo
+    isRecording  = true;
+    recStartTime = Date.now();
 
     document.getElementById('browserRecBtn').textContent = '⏺ Grabando…';
     document.getElementById('browserRecBtn').classList.add('recording');
@@ -1981,13 +2011,15 @@ async function browserStartRec() {
     document.getElementById('recStatus').className   = 'badge rec';
 
     captureStream.getVideoTracks()[0].addEventListener('ended', () => browserStopRec());
-    pearAction('previous').catch(()=>{});
-    pearAction('play').catch(()=>{});
+    pearAction('previous').catch(() => {});
+    pearAction('play').catch(() => {});
 }
 
 function browserStopRec() {
-    if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
-    mediaRecorder.stop();
+    if (!isRecording) return;
+    isRecording = false;
+
+    _mediaRecorder?.stop();
     displayStream?.getTracks().forEach(t => t.stop());
     displayStream = null;
 
@@ -1997,28 +2029,7 @@ function browserStopRec() {
     document.getElementById('recStatus').textContent = 'Guardando…';
     document.getElementById('recStatus').className   = 'badge';
 
-    pearAction('pause').catch(()=>{});
-}
-
-async function guardarGrabacion(mimeType, ctx, desdeOpfs = false) {
-    try { ctx.close(); } catch(e){}
-    if (!desdeOpfs && recChunks.length > 0) {
-        // Fallback: descargar desde RAM
-        const blob = new Blob(recChunks, { type:mimeType });
-        const name = (currentPres?.name || 'grabacion') + '_' + new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
-        recChunks = [];
-        const url = URL.createObjectURL(blob);
-        const a   = document.createElement('a');
-        a.href = url; a.download = name + '.webm'; a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-    }
-    recChunks = [];
-    document.getElementById('recStatus').textContent = '✅ Descargando…';
-    document.getElementById('recStatus').className   = 'badge ok';
-    setTimeout(() => {
-        document.getElementById('recStatus').textContent = 'Sin grabación';
-        document.getElementById('recStatus').className   = 'badge';
-    }, 4000);
+    pearAction('pause').catch(() => {});
 }
 
 // ═══════════════════════════════════════════════════════════════════
