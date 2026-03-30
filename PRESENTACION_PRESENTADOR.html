@@ -167,8 +167,9 @@
 
         /* Cámara */
         .cam-pos-btn, .cam-opt-btn {
-            flex:1; padding:5px 3px; border:1px solid #2a2a40; border-radius:5px;
+            flex:1; padding:0 3px; height:28px; border:1px solid #2a2a40; border-radius:5px;
             background:#0d0d1a; color:#666; font-size:0.7rem; cursor:pointer; transition:all 0.15s;
+            display:flex; align-items:center; justify-content:center; box-sizing:border-box;
         }
         .cam-pos-btn:hover, .cam-opt-btn:hover { background:#1a1a30; color:#ddd; }
         .cam-pos-btn.active, .cam-opt-btn.active { background:#00d4ff15; border-color:#00d4ff; color:#00d4ff; }
