@@ -540,6 +540,93 @@
             padding: 15px;
             resize: none;
         }
+
+        /* Modal IA */
+        .btn-ia {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: white;
+        }
+        .btn-ia:hover {
+            background: linear-gradient(135deg, #5a0db8, #1a65e8);
+        }
+        .btn-ia:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .ia-form-group {
+            margin-bottom: 16px;
+        }
+        .ia-form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .ia-form-group input,
+        .ia-form-group select,
+        .ia-form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+        .ia-form-group input:focus,
+        .ia-form-group select,
+        .ia-form-group textarea:focus {
+            outline: none;
+            border-color: #6a11cb;
+        }
+        .ia-form-group textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+        .ia-status {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-top: 12px;
+            display: none;
+        }
+        .ia-status.loading {
+            display: block;
+            background: rgba(106,17,203,0.15);
+            color: #a78bfa;
+            text-align: center;
+        }
+        .ia-status.error {
+            display: block;
+            background: rgba(220,53,69,0.15);
+            color: #f87171;
+        }
+        .ia-status.success {
+            display: block;
+            background: rgba(34,197,94,0.15);
+            color: #4ade80;
+        }
+        .ia-modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(167,139,250,0.3);
+            border-top-color: #a78bfa;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -624,6 +711,7 @@
         <div class="preview-actions">
             <button class="btn btn-secondary" id="exportJsonBtn">Exportar JSON</button>
             <button class="btn btn-secondary" id="importJsonBtn">Importar JSON</button>
+            <button class="btn btn-ia" id="iaBtn">&#x2728; Generar con IA</button>
             <button class="btn btn-primary" id="generateHtmlBtn">Generar HTML</button>
         </div>
     </div>
@@ -658,6 +746,43 @@
     </div>
     <div class="thumbnails-list" id="thumbnailsList">
         <!-- Miniaturas se generan aquí -->
+    </div>
+</div>
+
+<!-- Modal IA -->
+<div class="modal-overlay" id="iaModal">
+    <div class="modal" style="max-width:540px;">
+        <div class="modal-header">
+            <h3>&#x2728; Generar presentaci&#xf3;n con IA</h3>
+            <button class="modal-close" id="iaModalClose">&#xd7;</button>
+        </div>
+        <div class="modal-body" style="max-height:70vh;">
+            <div class="ia-form-group">
+                <label>Proveedor de IA</label>
+                <select id="iaProvider">
+                    <option value="gemini">Google Gemini (gratuito)</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="openai">OpenAI</option>
+                </select>
+            </div>
+            <div class="ia-form-group">
+                <label>API Key</label>
+                <input type="password" id="iaApiKey" placeholder="Pega tu API key aqu&#xed;...">
+            </div>
+            <div class="ia-form-group">
+                <label>Tema / descripci&#xf3;n de la presentaci&#xf3;n</label>
+                <textarea id="iaTema" placeholder="Ej: Presentaci&#xf3;n sobre el Censo DANE 2018 en Colombia con datos de poblaci&#xf3;n, distribuci&#xf3;n geogr&#xe1;fica y condiciones de vivienda. Estilo profesional, 8 slides."></textarea>
+            </div>
+            <div class="ia-form-group">
+                <label>Nombre de la presentaci&#xf3;n</label>
+                <input type="text" id="iaNombre" placeholder="Mi Presentaci&#xf3;n">
+            </div>
+            <div id="iaStatus" class="ia-status"></div>
+        </div>
+        <div class="ia-modal-footer">
+            <button class="btn btn-secondary" id="iaModalCancel">Cancelar</button>
+            <button class="btn btn-ia" id="iaGenerarBtn">&#x2728; Generar slides</button>
+        </div>
     </div>
 </div>
 
@@ -1026,6 +1151,177 @@
     setInterval(() => {
         localStorage.setItem('slides_editor', JSON.stringify(slides));
     }, 2000);
+
+    // ── IA: Generar presentación ──────────────────────────────
+
+    const iaModal       = document.getElementById('iaModal');
+    const iaStatus      = document.getElementById('iaStatus');
+    const iaGenerarBtn  = document.getElementById('iaGenerarBtn');
+
+    document.getElementById('iaBtn').addEventListener('click', () => {
+        iaStatus.className = 'ia-status';
+        iaStatus.textContent = '';
+        iaModal.classList.add('open');
+    });
+    document.getElementById('iaModalClose').addEventListener('click',  () => iaModal.classList.remove('open'));
+    document.getElementById('iaModalCancel').addEventListener('click', () => iaModal.classList.remove('open'));
+
+    iaGenerarBtn.addEventListener('click', async () => {
+        const provider = document.getElementById('iaProvider').value;
+        const apiKey   = document.getElementById('iaApiKey').value.trim();
+        const tema     = document.getElementById('iaTema').value.trim();
+        const nombre   = document.getElementById('iaNombre').value.trim() || 'Mi Presentación';
+
+        if (!apiKey) { mostrarEstadoIA('error', 'Ingresa tu API key.'); return; }
+        if (!tema)   { mostrarEstadoIA('error', 'Describe el tema de la presentación.'); return; }
+
+        iaGenerarBtn.disabled = true;
+        mostrarEstadoIA('loading', '<span class="spinner"></span>Generando slides con IA…');
+
+        try {
+            const texto = await llamarIA(provider, apiKey, tema);
+            const json  = extraerJSON(texto);
+
+            if (!json || !Array.isArray(json.slides)) {
+                mostrarEstadoIA('error', 'La IA no devolvió un formato válido. Intenta de nuevo.');
+                return;
+            }
+
+            // Descargar el JSON en formato Belén
+            const presentacion = {
+                name: nombre,
+                viewer: 'viewer.html',
+                slides: json.slides,
+                id: Math.random().toString(36).slice(2) + Date.now().toString(36)
+            };
+            descargarJSON(presentacion, nombre.replace(/\s+/g, '_') + '.json');
+
+            // Importar slides al editor (mapeando bg → background)
+            slides = json.slides.map(s => ({
+                title:      s.title      || '',
+                content:    s.content    || '',
+                tag:        s.tag        || '',
+                background: s.bg         || '#0d0d1a',
+                notes:      s.notes      || '',
+                layout:     mapLayout(s.layout)
+            }));
+            currentSlideIndex = 0;
+            loadSlideToEditor(0);
+
+            mostrarEstadoIA('success', '¡Listo! Se descargó el JSON y se importaron ' + slides.length + ' slides al editor.');
+        } catch (e) {
+            mostrarEstadoIA('error', 'Error: ' + e.message);
+        } finally {
+            iaGenerarBtn.disabled = false;
+        }
+    });
+
+    function mostrarEstadoIA(tipo, html) {
+        iaStatus.className = 'ia-status ' + tipo;
+        iaStatus.innerHTML = html;
+    }
+
+    function mapLayout(l) {
+        const map = { cover: 'titulo', highlight: 'destacado', tarjetas: 'tarjetas',
+                      minimalista: 'minimalista', centrado: 'centrado', izquierda: 'izquierda' };
+        return map[l] || 'destacado';
+    }
+
+    function extraerJSON(texto) {
+        // Buscar bloque JSON entre ``` o directamente
+        const match = texto.match(/```(?:json)?\s*([\s\S]*?)```/i);
+        const raw = match ? match[1] : texto;
+        try { return JSON.parse(raw.trim()); } catch { return null; }
+    }
+
+    function descargarJSON(obj, nombre) {
+        const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = nombre; a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    const SYSTEM_PROMPT = `Eres un generador de presentaciones. Debes responder ÚNICAMENTE con un objeto JSON válido, sin texto extra ni explicaciones.
+
+El JSON debe tener esta estructura exacta:
+{
+  "slides": [
+    {
+      "layout": "cover",
+      "bg": "linear-gradient(135deg, #1a1a2e, #16213e)",
+      "tag": "Etiqueta corta",
+      "title": "Título del slide",
+      "content": "Texto principal del slide",
+      "notes": "Guión del presentador: lo que debe decir en voz alta."
+    }
+  ]
+}
+
+Reglas:
+- layout: usa "cover" para portada/cierre, "highlight" para slides de contenido con caja destacada, "tarjetas" para listas de ítems, "centrado" para frases cortas, "minimalista" para datos clave.
+- bg: color CSS o linear-gradient coherente con el tema. Varía los colores entre slides pero mantén armonía.
+- tag: etiqueta muy corta (2-4 palabras) que categoriza el slide.
+- title: título conciso y claro.
+- content: texto breve para mostrar en pantalla (no el guión).
+- notes: guión detallado para el presentador, escrito en primera persona, listo para leer.
+- Genera entre 8 y 12 slides. El primero debe ser portada (layout: "cover") y el último cierre/conclusión.
+- Responde SOLO con el JSON, sin bloque de código markdown.`;
+
+    async function llamarIA(provider, apiKey, tema) {
+        if (provider === 'gemini') {
+            const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+            const res = await fetch(endpoint + '?key=' + apiKey, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+                    contents: [{ parts: [{ text: tema }] }],
+                    generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+                })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.candidates[0].content.parts[0].text;
+
+        } else if (provider === 'deepseek') {
+            const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+                body: JSON.stringify({
+                    model: 'deepseek-chat',
+                    messages: [
+                        { role: 'system', content: SYSTEM_PROMPT },
+                        { role: 'user',   content: tema }
+                    ],
+                    max_tokens: 4096,
+                    temperature: 0.7
+                })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.choices[0].message.content;
+
+        } else {
+            // OpenAI
+            const res = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        { role: 'system', content: SYSTEM_PROMPT },
+                        { role: 'user',   content: tema }
+                    ],
+                    max_tokens: 4096,
+                    temperature: 0.7
+                })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.choices[0].message.content;
+        }
+    }
 </script>
 
 </body>

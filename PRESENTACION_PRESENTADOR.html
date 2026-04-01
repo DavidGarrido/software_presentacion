@@ -531,6 +531,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn-secondary" onclick="exportarPresentacion()">⬇ Exportar JSON</button>
+            <button class="btn-secondary" onclick="abrirModalIA()" style="background:linear-gradient(135deg,#6a11cb,#2575fc);color:white;">&#x2728; Generar con IA</button>
             <button class="btn-primary" onclick="guardarPresentacion()">💾 Guardar</button>
         </div>
     </div>
@@ -541,6 +542,46 @@
 ══════════════════════════════════════════════════════ -->
 
 <input type="file" id="importInput" accept=".json" style="display:none" onchange="onImportJSON(event)">
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: Generar presentación con IA
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalIA">
+    <div class="modal" style="max-width:500px;">
+        <div class="modal-header">
+            <h2>&#x2728; Generar con IA</h2>
+            <button class="modal-close" onclick="closeModal('modalIA')">&#x2715;</button>
+        </div>
+        <div class="modal-body" style="flex-direction:column;gap:14px;padding:20px;">
+            <div>
+                <label style="font-size:0.8rem;color:#aaa;display:block;margin-bottom:5px;">Proveedor</label>
+                <select id="iaProvider" style="width:100%;padding:8px 10px;background:#0d0d1a;border:1px solid #2a2a40;border-radius:6px;color:white;font-size:0.9rem;">
+                    <option value="gemini">Google Gemini (gratuito)</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="openai">OpenAI</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:0.8rem;color:#aaa;display:block;margin-bottom:5px;">API Key</label>
+                <input type="password" id="iaApiKey" placeholder="Pega tu API key aqu&#xed;..."
+                    style="width:100%;padding:8px 10px;background:#0d0d1a;border:1px solid #2a2a40;border-radius:6px;color:white;font-size:0.9rem;">
+            </div>
+            <div>
+                <label style="font-size:0.8rem;color:#aaa;display:block;margin-bottom:5px;">Tema / descripci&#xf3;n</label>
+                <textarea id="iaTema" rows="4" placeholder="Ej: Presentaci&#xf3;n sobre el Censo DANE 2018 con datos de poblaci&#xf3;n y vivienda. Estilo profesional, 10 slides."
+                    style="width:100%;padding:8px 10px;background:#0d0d1a;border:1px solid #2a2a40;border-radius:6px;color:white;font-size:0.9rem;resize:vertical;"></textarea>
+            </div>
+            <div id="iaStatusMsg" style="display:none;padding:10px 14px;border-radius:7px;font-size:0.85rem;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal('modalIA')">Cancelar</button>
+            <button id="iaBtnGenerar" onclick="generarConIA()"
+                style="background:linear-gradient(135deg,#6a11cb,#2575fc);color:white;border:none;padding:8px 20px;border-radius:7px;font-size:0.9rem;font-weight:600;cursor:pointer;">
+                &#x2728; Generar slides
+            </button>
+        </div>
+    </div>
+</div>
 
 <script>
 'use strict';
@@ -2197,6 +2238,284 @@ async function pearAction(action) {
         loadPresentacion(last);
     }
 })();
+
+// ═══════════════════════════════════════════════════════════════════
+// IA: Generar presentación
+// ═══════════════════════════════════════════════════════════════════
+
+function abrirModalIA() {
+    document.getElementById('iaStatusMsg').style.display = 'none';
+    document.getElementById('modalIA').classList.remove('hidden');
+}
+
+function iaSetStatus(tipo, html) {
+    const el = document.getElementById('iaStatusMsg');
+    el.style.display = 'block';
+    el.style.background = tipo === 'error'   ? 'rgba(220,53,69,0.15)'   :
+                          tipo === 'success'  ? 'rgba(34,197,94,0.15)'   :
+                                               'rgba(106,17,203,0.15)';
+    el.style.color      = tipo === 'error'   ? '#f87171' :
+                          tipo === 'success'  ? '#4ade80' : '#a78bfa';
+    el.innerHTML = html;
+}
+
+const IA_SYSTEM_PROMPT = `Eres un generador de presentaciones. Responde ÚNICAMENTE con un objeto JSON válido, sin texto extra ni bloques markdown.
+
+Estructura exacta:
+{
+  "name": "Nombre de la presentación",
+  "accentColor": "#00d4ff",
+  "decorEmojis": ["emoji1", "emoji2", "emoji3"],
+  "slides": [
+    {
+      "title": "Título del slide",
+      "content": "Texto visible en pantalla. Usa ||palabras clave|| para resaltar en color acento.",
+      "tag": "ETIQUETA CORTA",
+      "bg": "linear-gradient(145deg, #1a1a2e, #0f3460)",
+      "notes": "Guión del presentador: lo que debe decir en voz alta."
+    }
+  ]
+}
+
+Reglas:
+- accentColor: color hex principal coherente con el tema (se usa en títulos, highlights, bordes).
+- decorEmojis: array de 4-6 emojis representativos del tema para las partículas decorativas.
+- bg: cada slide tiene su propio linear-gradient CSS, con variaciones armónicas entre slides.
+- content: texto breve para mostrar en pantalla. Usa ||texto|| para marcar palabras clave.
+- notes: guión detallado en primera persona para el presentador.
+- tag: etiqueta muy corta en mayúsculas (2-4 palabras).
+- Genera entre 8 y 12 slides. El primero es portada, el último es cierre.
+- Responde SOLO el JSON, sin explicaciones.`;
+
+async function generarConIA() {
+    const provider = document.getElementById('iaProvider').value;
+    const apiKey   = document.getElementById('iaApiKey').value.trim();
+    const tema     = document.getElementById('iaTema').value.trim();
+    const btn      = document.getElementById('iaBtnGenerar');
+
+    if (!apiKey) { iaSetStatus('error', 'Ingresa tu API key.'); return; }
+    if (!tema)   { iaSetStatus('error', 'Describe el tema de la presentación.'); return; }
+
+    btn.disabled = true;
+    iaSetStatus('loading', '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(167,139,250,0.3);border-top-color:#a78bfa;border-radius:50%;animation:iaSpin 0.8s linear infinite;margin-right:8px;vertical-align:middle;"></span>Generando con IA…');
+
+    if (!document.getElementById('iaSpinStyle')) {
+        const st = document.createElement('style');
+        st.id = 'iaSpinStyle';
+        st.textContent = '@keyframes iaSpin{to{transform:rotate(360deg)}}';
+        document.head.appendChild(st);
+    }
+
+    try {
+        const texto = await iaLlamarAPI(provider, apiKey, tema);
+        const obj   = iaExtraerJSON(texto);
+
+        if (!obj || !Array.isArray(obj.slides) || !obj.slides.length) {
+            iaSetStatus('error', 'La IA no devolvió un formato válido. Intenta de nuevo.');
+            return;
+        }
+
+        const pres = {
+            id:         uid(),
+            name:       obj.name || 'Presentación IA',
+            slides:     obj.slides,
+            viewerHtml: buildViewerHtml(obj.slides, obj.name || 'Presentación IA', obj.accentColor || '#00d4ff', obj.decorEmojis || ['✨']),
+            updatedAt:  new Date().toISOString()
+        };
+        await dbPut('presentations', pres);
+        renderPresList();
+        closeModal('modalIA');
+
+        // Abrir editor con los slides generados
+        edEditingId   = pres.id;
+        edSlides      = JSON.parse(JSON.stringify(pres.slides));
+        edSelectedIdx = -1;
+        _edResetHistory();
+        document.getElementById('edPresName').value = pres.name;
+        document.getElementById('editorTitle').textContent = 'IA: ' + pres.name;
+        renderEdSlideList();
+        edShowSlideForm(edSlides.length ? 0 : -1);
+        if (edSlides.length) edSelectedIdx = 0;
+        openModal('modalEditor');
+
+    } catch (e) {
+        iaSetStatus('error', 'Error: ' + e.message);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function buildViewerHtml(slides, name, accent, emojis) {
+    const esc = s => String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+    // Convierte ||texto|| → <span class="hl">texto</span>
+    const hl = s => esc(s || '').replace(/\|\|(.+?)\|\|/g, '<span class="hl">$1</span>');
+
+    const bgCss = slides.map((s, i) =>
+        `[data-slide="${i}"] .sbg { background: ${s.bg || '#0d0d1a'}; }`
+    ).join('\n        ');
+
+    const slidesHtml = slides.map((s, i) => {
+        const isFirst = i === 0;
+        const lines = (s.content || '').split('\n').filter(Boolean);
+        const contentHtml = lines.length > 1
+            ? lines.map(l => `<li>${hl(l)}</li>`).join('')
+            : `<p>${hl(lines[0] || '')}</p>`;
+        const bodyTag = lines.length > 1 ? `<ul class="bullets">${contentHtml}</ul>` : contentHtml;
+
+        return `
+    <div class="slide${isFirst ? ' active' : ''}" data-slide="${i}">
+      <div class="sbg"></div>
+      ${isFirst ? '' : '<div class="frame"></div>'}
+      <div class="shd">
+        <div class="stag">${esc(s.tag || '')}</div>
+        ${isFirst ? `<h1>${esc(s.title || '')}</h1>` : `<h2>${esc(s.title || '')}</h2>`}
+      </div>
+      <div class="cam-wrap"><div class="cam-ring" id="ring${i}"><div class="cam-inner" id="inner${i}"></div></div></div>
+      <div class="sft">${bodyTag}</div>
+    </div>`;
+    }).join('');
+
+    const particlesJs = `
+    const emojis = ${JSON.stringify(emojis)};
+    const pc = document.getElementById('pc');
+    for (let i = 0; i < 20; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.textContent = emojis[i % emojis.length];
+        p.style.cssText = 'left:' + (Math.random()*100) + '%;font-size:' + (1.2+Math.random()*1.4) + 'rem;animation-duration:' + (8+Math.random()*12) + 's;animation-delay:-' + (Math.random()*12) + 's;';
+        pc.appendChild(p);
+    }`;
+
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${esc(name)}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;font-family:'Segoe UI',Arial,sans-serif}
+.sc{position:relative;width:100%;height:100%}
+.slide{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto;align-items:center;justify-items:center;padding:6% 10%;opacity:0;visibility:hidden;transform:translateX(40px);transition:opacity .6s,transform .6s,visibility .6s}
+.slide.active{opacity:1;visibility:visible;transform:translateX(0)}
+.sbg{position:absolute;inset:0;z-index:0}
+.frame{position:absolute;inset:16px;border:1px solid rgba(255,255,255,0.08);border-radius:20px;pointer-events:none;z-index:1}
+.shd{z-index:5;text-align:center}
+.stag{font-size:clamp(.55rem,1vw,.75rem);text-transform:uppercase;letter-spacing:.18em;color:${accent};opacity:.8;margin-bottom:.8em;font-weight:600}
+h1{font-size:clamp(2rem,7vw,5rem);font-weight:700;color:#fff;line-height:1.15;text-shadow:0 2px 20px rgba(0,0,0,.5)}
+h2{font-size:clamp(1.4rem,4vw,3rem);font-weight:700;color:#fff;line-height:1.2;text-shadow:0 2px 16px rgba(0,0,0,.5)}
+.sft{z-index:5;text-align:center;max-width:860px;width:100%}
+.sft p{font-size:clamp(.9rem,2vw,1.4rem);color:rgba(255,255,255,.85);line-height:1.6}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.5em;width:100%;text-align:left}
+.bullets li{font-size:clamp(.8rem,1.7vw,1.15rem);color:rgba(255,255,255,.88);padding:.5em .9em;background:rgba(255,255,255,.05);border-radius:8px;border-left:3px solid ${accent}44;line-height:1.5}
+.hl{color:${accent};font-weight:700}
+.cam-wrap{display:none;z-index:10;position:absolute;bottom:5%;right:3%}
+.cam-wrap.activa{display:flex}
+.cam-ring{width:120px;height:120px;border-radius:50%;padding:3px;background:conic-gradient(${accent},#7b2ff7,${accent});animation:spin 3s linear infinite}
+.cam-inner{width:100%;height:100%;border-radius:50%;overflow:hidden;background:#000;animation:spin-rev 3s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes spin-rev{to{transform:rotate(-360deg)}}
+.counter{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:100}
+.dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer;transition:all .3s}
+.dot.active{background:${accent};transform:scale(1.4)}
+#pc{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.particle{position:absolute;bottom:-10%;animation:rise linear infinite;opacity:.18;user-select:none}
+@keyframes rise{0%{transform:translateY(0) rotate(0deg);opacity:.18}100%{transform:translateY(-110vh) rotate(360deg);opacity:0}}
+${bgCss}
+</style>
+</head>
+<body>
+<div id="pc"></div>
+<div class="sc">${slidesHtml}
+</div>
+<div class="counter" id="counter"></div>
+<script>
+let cur=0,busy=false;
+const slideEls=document.querySelectorAll('.slide');
+const counter=document.getElementById('counter');
+slideEls.forEach((_,i)=>{const d=document.createElement('div');d.className='dot'+(i===0?' active':'');d.onclick=()=>go(i);counter.appendChild(d);});
+function go(n){if(busy||n===cur||n<0||n>=slideEls.length)return;busy=true;slideEls[cur].classList.remove('active');document.querySelectorAll('.dot')[cur].classList.remove('active');cur=n;slideEls[cur].classList.add('active');document.querySelectorAll('.dot')[cur].classList.add('active');setTimeout(()=>busy=false,600);}
+function next(){go(cur+1);}function prev(){go(cur-1);}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' ')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
+document.addEventListener('click',e=>{if(e.target.classList.contains('dot'))return;e.clientX>window.innerWidth/2?next():prev();});
+let camStream=null;
+async function activarCamara(){
+    if(!camStream){try{camStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});}catch(e){return;}}
+    document.querySelectorAll('.cam-inner').forEach(el=>{if(!el.querySelector('video')){const v=document.createElement('video');v.srcObject=camStream;v.autoplay=true;v.muted=true;v.playsInline=true;v.style.cssText='width:100%;height:100%;object-fit:cover;';el.appendChild(v);}});
+    document.querySelectorAll('.cam-wrap').forEach(el=>el.classList.add('activa'));
+}
+function desactivarCamara(){
+    document.querySelectorAll('.cam-wrap').forEach(el=>el.classList.remove('activa'));
+    if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+    document.querySelectorAll('.cam-inner video').forEach(v=>v.remove());
+}
+window.addEventListener('message',e=>{
+    const d=e.data;if(!d)return;
+    if(d.action==='goto')go(d.index);
+    if(d.action==='next')next();
+    if(d.action==='prev')prev();
+    if(d.action==='load'&&typeof d.index==='number')go(d.index);
+    if(d.action==='camera'){d.enabled?activarCamara():desactivarCamara();}
+    try{window.parent.postMessage({action:'slideChanged',index:cur},'*');}catch(e){}
+});
+${particlesJs}
+<\/script>
+</body>
+</html>`;
+}
+
+function iaExtraerJSON(texto) {
+    const match = texto.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const raw = (match ? match[1] : texto).trim();
+    try { return JSON.parse(raw); } catch { return null; }
+}
+
+async function iaLlamarAPI(provider, apiKey, tema) {
+    if (provider === 'gemini') {
+        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                systemInstruction: { parts: [{ text: IA_SYSTEM_PROMPT }] },
+                contents: [{ parts: [{ text: tema }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
+            })
+        });
+        const d = await res.json();
+        if (d.error) throw new Error(d.error.message);
+        return d.candidates[0].content.parts[0].text;
+
+    } else if (provider === 'deepseek') {
+        const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+            body: JSON.stringify({
+                model: 'deepseek-chat',
+                messages: [{ role: 'system', content: IA_SYSTEM_PROMPT }, { role: 'user', content: tema }],
+                max_tokens: 8192, temperature: 0.7
+            })
+        });
+        const d = await res.json();
+        if (d.error) throw new Error(d.error.message);
+        return d.choices[0].message.content;
+
+    } else {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [{ role: 'system', content: IA_SYSTEM_PROMPT }, { role: 'user', content: tema }],
+                max_tokens: 8192, temperature: 0.7
+            })
+        });
+        const d = await res.json();
+        if (d.error) throw new Error(d.error.message);
+        return d.choices[0].message.content;
+    }
+}
 </script>
 </body>
 </html>
