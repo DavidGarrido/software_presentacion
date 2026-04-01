@@ -2244,8 +2244,19 @@ async function pearAction(action) {
 // ═══════════════════════════════════════════════════════════════════
 
 function abrirModalIA() {
+    // Restaurar proveedor y API key guardados
+    const saved = JSON.parse(localStorage.getItem('ia_config') || '{}');
+    if (saved.provider) document.getElementById('iaProvider').value = saved.provider;
+    if (saved.apiKey)   document.getElementById('iaApiKey').value   = saved.apiKey;
     document.getElementById('iaStatusMsg').style.display = 'none';
     document.getElementById('modalIA').classList.remove('hidden');
+}
+
+function iaGuardarConfig() {
+    localStorage.setItem('ia_config', JSON.stringify({
+        provider: document.getElementById('iaProvider').value,
+        apiKey:   document.getElementById('iaApiKey').value.trim()
+    }));
 }
 
 function iaSetStatus(tipo, html) {
@@ -2259,33 +2270,55 @@ function iaSetStatus(tipo, html) {
     el.innerHTML = html;
 }
 
-const IA_SYSTEM_PROMPT = `Eres un generador de presentaciones. Responde ÚNICAMENTE con un objeto JSON válido, sin texto extra ni bloques markdown.
+const IA_SYSTEM_PROMPT = `Eres un generador de presentaciones profesionales. Responde ÚNICAMENTE con un objeto JSON válido, sin texto extra ni bloques markdown.
 
-Estructura exacta:
+Estructura EXACTA (no agregues campos extra):
 {
-  "name": "Nombre de la presentación",
+  "name": "Título de la presentación",
   "accentColor": "#00d4ff",
-  "decorEmojis": ["emoji1", "emoji2", "emoji3"],
+  "decorEmojis": ["🤖", "💡", "🚀", "⚡", "🌐"],
   "slides": [
     {
-      "title": "Título del slide",
-      "content": "Texto visible en pantalla. Usa ||palabras clave|| para resaltar en color acento.",
-      "tag": "ETIQUETA CORTA",
-      "bg": "linear-gradient(145deg, #1a1a2e, #0f3460)",
-      "notes": "Guión del presentador: lo que debe decir en voz alta."
+      "title": "Título corto del slide",
+      "content": "Línea corta 1\nLínea corta 2\nLínea corta 3",
+      "tag": "CATEGORÍA",
+      "bg": "linear-gradient(145deg, #0a0a1a, #001f3f)",
+      "notes": "Guión completo del presentador en primera persona."
     }
   ]
 }
 
-Reglas:
-- accentColor: color hex principal coherente con el tema (se usa en títulos, highlights, bordes).
-- decorEmojis: array de 4-6 emojis representativos del tema para las partículas decorativas.
-- bg: cada slide tiene su propio linear-gradient CSS, con variaciones armónicas entre slides.
-- content: texto breve para mostrar en pantalla. Usa ||texto|| para marcar palabras clave.
-- notes: guión detallado en primera persona para el presentador.
-- tag: etiqueta muy corta en mayúsculas (2-4 palabras).
-- Genera entre 8 y 12 slides. El primero es portada, el último es cierre.
-- Responde SOLO el JSON, sin explicaciones.`;
+REGLAS OBLIGATORIAS — léelas completas antes de generar:
+
+1. accentColor: SIEMPRE incluirlo. Un color hex coherente con el tema.
+
+2. decorEmojis: SIEMPRE incluirlo. Array de 5-6 emojis representativos del tema.
+
+3. bg: Cada slide tiene su propio linear-gradient. Varía los colores armónicamente.
+
+4. layout — OBLIGATORIO en cada slide. Usa exactamente uno de estos valores:
+   - "cover"     → Portada (primer slide) y Cierre (último slide).
+   - ""          → Bullets: slide con 3 puntos concisos. USA ESTE para la mayoría de slides de contenido.
+   - "highlight" → Un dato, cifra o cita impactante. Una sola línea poderosa.
+   - "image"     → Slide con imagen. El content debe ser una URL de imagen real de Unsplash u otro CDN público.
+
+5. content — reglas según layout:
+   - layout "cover":     Una línea corta (máx 10 palabras). Sin ||marcadores||.
+   - layout "":          EXACTAMENTE 3 líneas separadas por \\n. Máx 7 palabras por línea.
+                         CORRECTO: "||Diagnóstico|| con precisión sobrehumana\\nDetección de cáncer en radiografías\\nAnálisis 100x más rápido"
+                         INCORRECTO: "Los sistemas de IA identifican patrones médicos, analizan imágenes y permiten vehículos autónomos."
+   - layout "highlight": Una sola frase corta e impactante (máx 12 palabras).
+   - layout "image":     URL directa a una imagen pública (jpg/png). Ej: "https://images.unsplash.com/photo-xxxxx?w=1920"
+
+6. Marcadores ||: Solo en layouts "" y "highlight". Máximo 2 por slide. Solo palabras clave, NUNCA frases largas.
+
+7. tag: 2-3 palabras en MAYÚSCULAS.
+
+8. notes: Guión detallado y natural para leer en voz alta. Mínimo 3 oraciones.
+
+9. Genera entre 8 y 12 slides. Primero: cover. Último: cover. Incluye al menos 1 highlight y 1 image.
+
+10. Responde SOLO el JSON.`;
 
 async function generarConIA() {
     const provider = document.getElementById('iaProvider').value;
@@ -2296,6 +2329,7 @@ async function generarConIA() {
     if (!apiKey) { iaSetStatus('error', 'Ingresa tu API key.'); return; }
     if (!tema)   { iaSetStatus('error', 'Describe el tema de la presentación.'); return; }
 
+    iaGuardarConfig();
     btn.disabled = true;
     iaSetStatus('loading', '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(167,139,250,0.3);border-top-color:#a78bfa;border-radius:50%;animation:iaSpin 0.8s linear infinite;margin-right:8px;vertical-align:middle;"></span>Generando con IA…');
 
@@ -2348,45 +2382,58 @@ async function generarConIA() {
 function buildViewerHtml(slides, name, accent, emojis) {
     const esc = s => String(s)
         .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const hl = s => esc(s || '').replace(/\|\|(.+?)\|\|/g, `<span class="hl">$1</span>`);
+    // hex → rgba helper embebido en el HTML generado
+    const accentRgb = (() => {
+        const h = accent.replace('#','');
+        const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+        return `${r},${g},${b}`;
+    })();
 
-    // Convierte ||texto|| → <span class="hl">texto</span>
-    const hl = s => esc(s || '').replace(/\|\|(.+?)\|\|/g, '<span class="hl">$1</span>');
-
-    const bgCss = slides.map((s, i) =>
-        `[data-slide="${i}"] .sbg { background: ${s.bg || '#0d0d1a'}; }`
-    ).join('\n        ');
+    const bgCss = slides.map((s,i) =>
+        `[data-slide="${i}"] .sbg{background:${s.bg||'#0d0d1a'}}`
+    ).join('');
 
     const slidesHtml = slides.map((s, i) => {
-        const isFirst = i === 0;
-        const lines = (s.content || '').split('\n').filter(Boolean);
-        const contentHtml = lines.length > 1
-            ? lines.map(l => `<li>${hl(l)}</li>`).join('')
-            : `<p>${hl(lines[0] || '')}</p>`;
-        const bodyTag = lines.length > 1 ? `<ul class="bullets">${contentHtml}</ul>` : contentHtml;
+        const lines     = (s.content || '').split('\n').filter(l => l.trim());
+        const firstLine = lines[0] || '';
+        const isImgUrl  = /^https?:\/\//i.test(firstLine) &&
+                          (/\.(jpg|jpeg|png|webp|gif|svg)/i.test(firstLine) ||
+                           /unsplash\.com|imgur\.com|pexels\.com|pixabay\.com/i.test(firstLine));
+        // Usar layout declarado; si no, inferir por contenido
+        const layout  = s.layout || (isImgUrl ? 'image' : '');
+        const isCover = layout === 'cover';
+
+        let bodyHtml;
+        if (isCover) {
+            bodyHtml = lines.length
+                ? `<p class="cover-sub">${hl(lines.join(' '))}</p>`
+                : '';
+        } else if (layout === 'highlight') {
+            bodyHtml = `<div class="highlight-box">${hl(lines.join(' '))}</div>`;
+        } else if (layout === 'image' && lines[0]) {
+            bodyHtml = `<div class="img-wrap"><img src="${esc(lines[0])}" alt="${esc(s.title||'')}"></div>`;
+        } else {
+            // bullets (layout === '')
+            bodyHtml = `<ul class="bullets">${lines.map(l=>`<li><span class="bull-icon">›</span>${hl(l)}</li>`).join('')}</ul>`;
+        }
 
         return `
-    <div class="slide${isFirst ? ' active' : ''}" data-slide="${i}">
-      <div class="sbg"></div>
-      ${isFirst ? '' : '<div class="frame"></div>'}
-      <div class="shd">
-        <div class="stag">${esc(s.tag || '')}</div>
-        ${isFirst ? `<h1>${esc(s.title || '')}</h1>` : `<h2>${esc(s.title || '')}</h2>`}
-      </div>
-      <div class="cam-wrap"><div class="cam-ring" id="ring${i}"><div class="cam-inner" id="inner${i}"></div></div></div>
-      <div class="sft">${bodyTag}</div>
-    </div>`;
+  <div class="slide${isCover?' cover':''} ${i===0?'active':''}" data-slide="${i}">
+    <div class="sbg"></div>
+    <div class="overlay"></div>
+    ${!isCover ? '<div class="frame"></div>' : ''}
+    <div class="slide-inner">
+      <div class="stag">${esc(s.tag||'')}</div>
+      ${isCover
+        ? `<h1>${esc(s.title||'')}</h1>`
+        : `<h2>${esc(s.title||'')}</h2><div class="divider"></div>`}
+      <div class="sbody">${bodyHtml}</div>
+    </div>
+    <div class="cam-wrap"><div class="cam-ring" id="ring${i}"><div class="cam-inner" id="inner${i}"></div></div></div>
+    <div class="slide-num">${i+1} <span>/ ${slides.length}</span></div>
+  </div>`;
     }).join('');
-
-    const particlesJs = `
-    const emojis = ${JSON.stringify(emojis)};
-    const pc = document.getElementById('pc');
-    for (let i = 0; i < 20; i++) {
-        const p = document.createElement('div');
-        p.className = 'particle';
-        p.textContent = emojis[i % emojis.length];
-        p.style.cssText = 'left:' + (Math.random()*100) + '%;font-size:' + (1.2+Math.random()*1.4) + 'rem;animation-duration:' + (8+Math.random()*12) + 's;animation-delay:-' + (Math.random()*12) + 's;';
-        pc.appendChild(p);
-    }`;
 
     return `<!DOCTYPE html>
 <html lang="es">
@@ -2395,33 +2442,61 @@ function buildViewerHtml(slides, name, accent, emojis) {
 <title>${esc(name)}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;font-family:'Segoe UI',Arial,sans-serif}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:#050510}
 .sc{position:relative;width:100%;height:100%}
-.slide{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto;align-items:center;justify-items:center;padding:6% 10%;opacity:0;visibility:hidden;transform:translateX(40px);transition:opacity .6s,transform .6s,visibility .6s}
-.slide.active{opacity:1;visibility:visible;transform:translateX(0)}
+
+/* ── Slide base ── */
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5% 9%;opacity:0;visibility:hidden;transform:translateY(18px) scale(.985);transition:opacity .55s ease,transform .55s ease,visibility .55s}
+.slide.active{opacity:1;visibility:visible;transform:translateY(0) scale(1)}
 .sbg{position:absolute;inset:0;z-index:0}
-.frame{position:absolute;inset:16px;border:1px solid rgba(255,255,255,0.08);border-radius:20px;pointer-events:none;z-index:1}
-.shd{z-index:5;text-align:center}
-.stag{font-size:clamp(.55rem,1vw,.75rem);text-transform:uppercase;letter-spacing:.18em;color:${accent};opacity:.8;margin-bottom:.8em;font-weight:600}
-h1{font-size:clamp(2rem,7vw,5rem);font-weight:700;color:#fff;line-height:1.15;text-shadow:0 2px 20px rgba(0,0,0,.5)}
-h2{font-size:clamp(1.4rem,4vw,3rem);font-weight:700;color:#fff;line-height:1.2;text-shadow:0 2px 16px rgba(0,0,0,.5)}
-.sft{z-index:5;text-align:center;max-width:860px;width:100%}
-.sft p{font-size:clamp(.9rem,2vw,1.4rem);color:rgba(255,255,255,.85);line-height:1.6}
-.bullets{list-style:none;display:flex;flex-direction:column;gap:.5em;width:100%;text-align:left}
-.bullets li{font-size:clamp(.8rem,1.7vw,1.15rem);color:rgba(255,255,255,.88);padding:.5em .9em;background:rgba(255,255,255,.05);border-radius:8px;border-left:3px solid ${accent}44;line-height:1.5}
+.overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.18) 0%,rgba(0,0,0,.42) 100%)}
+.frame{position:absolute;inset:14px;border:1px solid rgba(${accentRgb},.13);border-radius:22px;pointer-events:none;z-index:2}
+.slide-inner{position:relative;z-index:5;text-align:center;width:100%;max-width:980px;display:flex;flex-direction:column;align-items:center;gap:.7em}
+
+/* ── Tag ── */
+.stag{font-size:clamp(.55rem,.95vw,.72rem);text-transform:uppercase;letter-spacing:.22em;color:rgba(${accentRgb},.85);font-weight:700;padding:.3em .9em;border:1px solid rgba(${accentRgb},.3);border-radius:20px;backdrop-filter:blur(4px)}
+
+/* ── Títulos ── */
+h1{font-size:clamp(2.2rem,7.5vw,5.4rem);font-weight:800;color:#fff;line-height:1.1;text-shadow:0 4px 32px rgba(0,0,0,.6);letter-spacing:-.02em}
+h2{font-size:clamp(1.5rem,4.2vw,3.2rem);font-weight:700;color:#fff;line-height:1.2;text-shadow:0 3px 20px rgba(0,0,0,.5)}
+.cover h1{background:linear-gradient(135deg,#fff 40%,rgba(${accentRgb},.85));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* ── Divisor ── */
+.divider{width:52px;height:3px;background:linear-gradient(90deg,${accent},transparent);border-radius:2px;margin:.2em 0 .5em}
+
+/* ── Cuerpo ── */
+.sbody{width:100%;max-width:840px}
+.cover-sub{font-size:clamp(1rem,2.2vw,1.5rem);color:rgba(255,255,255,.72);line-height:1.6;max-width:640px}
+.highlight-box{font-size:clamp(1rem,2.4vw,1.7rem);font-weight:600;color:#fff;line-height:1.5;padding:.7em 1.2em;border-left:3px solid ${accent};background:rgba(${accentRgb},.07);border-radius:0 12px 12px 0;text-align:left;backdrop-filter:blur(6px)}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55em;text-align:left}
+.bullets li{display:flex;align-items:flex-start;gap:.65em;font-size:clamp(.82rem,1.8vw,1.18rem);color:rgba(255,255,255,.9);padding:.6em 1em;background:rgba(255,255,255,.05);border-radius:10px;border:1px solid rgba(255,255,255,.06);line-height:1.5;backdrop-filter:blur(4px)}
+.bull-icon{color:${accent};font-size:1.1em;line-height:1.4;flex-shrink:0;font-weight:700}
 .hl{color:${accent};font-weight:700}
-.cam-wrap{display:none;z-index:10;position:absolute;bottom:5%;right:3%}
+.img-wrap{width:100%;max-width:780px;max-height:55vh;border-radius:14px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.img-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* ── Cámara ── */
+.cam-wrap{display:none;position:absolute;bottom:4.5%;right:2.5%;z-index:20}
 .cam-wrap.activa{display:flex}
-.cam-ring{width:120px;height:120px;border-radius:50%;padding:3px;background:conic-gradient(${accent},#7b2ff7,${accent});animation:spin 3s linear infinite}
+.cam-ring{width:116px;height:116px;border-radius:50%;padding:3px;background:conic-gradient(${accent},#7b2ff7,${accent});animation:spin 3s linear infinite}
 .cam-inner{width:100%;height:100%;border-radius:50%;overflow:hidden;background:#000;animation:spin-rev 3s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes spin-rev{to{transform:rotate(-360deg)}}
-.counter{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:100}
-.dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer;transition:all .3s}
-.dot.active{background:${accent};transform:scale(1.4)}
+
+/* ── Número de slide ── */
+.slide-num{position:absolute;bottom:1.6%;right:2%;font-size:clamp(.55rem,.9vw,.75rem);color:rgba(255,255,255,.28);z-index:5;letter-spacing:.05em}
+.slide-num span{color:rgba(255,255,255,.15)}
+
+/* ── Dots ── */
+.counter{position:fixed;bottom:13px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:100}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.22);cursor:pointer;transition:all .3s}
+.dot.active{background:${accent};transform:scale(1.5);box-shadow:0 0 8px rgba(${accentRgb},.6)}
+
+/* ── Partículas ── */
 #pc{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-.particle{position:absolute;bottom:-10%;animation:rise linear infinite;opacity:.18;user-select:none}
-@keyframes rise{0%{transform:translateY(0) rotate(0deg);opacity:.18}100%{transform:translateY(-110vh) rotate(360deg);opacity:0}}
+.particle{position:absolute;bottom:-8%;animation:rise linear infinite;opacity:.14;user-select:none;filter:blur(.3px)}
+@keyframes rise{0%{transform:translateY(0) rotate(0deg);opacity:.14}70%{opacity:.14}100%{transform:translateY(-112vh) rotate(400deg);opacity:0}}
+
 ${bgCss}
 </style>
 </head>
@@ -2432,34 +2507,44 @@ ${bgCss}
 <div class="counter" id="counter"></div>
 <script>
 let cur=0,busy=false;
-const slideEls=document.querySelectorAll('.slide');
-const counter=document.getElementById('counter');
-slideEls.forEach((_,i)=>{const d=document.createElement('div');d.className='dot'+(i===0?' active':'');d.onclick=()=>go(i);counter.appendChild(d);});
-function go(n){if(busy||n===cur||n<0||n>=slideEls.length)return;busy=true;slideEls[cur].classList.remove('active');document.querySelectorAll('.dot')[cur].classList.remove('active');cur=n;slideEls[cur].classList.add('active');document.querySelectorAll('.dot')[cur].classList.add('active');setTimeout(()=>busy=false,600);}
+const ELS=document.querySelectorAll('.slide');
+const CTR=document.getElementById('counter');
+ELS.forEach((_,i)=>{const d=document.createElement('div');d.className='dot'+(i===0?' active':'');d.onclick=()=>go(i);CTR.appendChild(d);});
+function go(n){if(busy||n<0||n>=ELS.length||n===cur)return;busy=true;ELS[cur].classList.remove('active');CTR.children[cur].classList.remove('active');cur=n;ELS[cur].classList.add('active');CTR.children[cur].classList.add('active');setTimeout(()=>busy=false,580);}
 function next(){go(cur+1);}function prev(){go(cur-1);}
-document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' ')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
-document.addEventListener('click',e=>{if(e.target.classList.contains('dot'))return;e.clientX>window.innerWidth/2?next():prev();});
+document.addEventListener('keydown',e=>{if(['ArrowRight','ArrowDown',' '].includes(e.key)){e.preventDefault();next();}if(['ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();prev();}});
+document.addEventListener('click',e=>{if(e.target.closest('.dot,.cam-wrap'))return;e.clientX>window.innerWidth/2?next():prev();});
 let camStream=null;
 async function activarCamara(){
-    if(!camStream){try{camStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});}catch(e){return;}}
-    document.querySelectorAll('.cam-inner').forEach(el=>{if(!el.querySelector('video')){const v=document.createElement('video');v.srcObject=camStream;v.autoplay=true;v.muted=true;v.playsInline=true;v.style.cssText='width:100%;height:100%;object-fit:cover;';el.appendChild(v);}});
-    document.querySelectorAll('.cam-wrap').forEach(el=>el.classList.add('activa'));
+  if(!camStream){try{camStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});}catch(e){return;}}
+  document.querySelectorAll('.cam-inner').forEach(el=>{if(!el.querySelector('video')){const v=document.createElement('video');v.srcObject=camStream;v.autoplay=v.muted=v.playsInline=true;v.style.cssText='width:100%;height:100%;object-fit:cover;';el.appendChild(v);}});
+  document.querySelectorAll('.cam-wrap').forEach(el=>el.classList.add('activa'));
 }
 function desactivarCamara(){
-    document.querySelectorAll('.cam-wrap').forEach(el=>el.classList.remove('activa'));
-    if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
-    document.querySelectorAll('.cam-inner video').forEach(v=>v.remove());
+  document.querySelectorAll('.cam-wrap').forEach(el=>el.classList.remove('activa'));
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  document.querySelectorAll('.cam-inner video').forEach(v=>v.remove());
 }
 window.addEventListener('message',e=>{
-    const d=e.data;if(!d)return;
-    if(d.action==='goto')go(d.index);
-    if(d.action==='next')next();
-    if(d.action==='prev')prev();
-    if(d.action==='load'&&typeof d.index==='number')go(d.index);
-    if(d.action==='camera'){d.enabled?activarCamara():desactivarCamara();}
-    try{window.parent.postMessage({action:'slideChanged',index:cur},'*');}catch(e){}
+  const d=e.data;if(!d)return;
+  if(d.action==='goto')go(d.index);
+  if(d.action==='next')next();
+  if(d.action==='prev')prev();
+  if(d.action==='load'&&typeof d.index==='number')go(d.index);
+  if(d.action==='camera'){d.enabled?activarCamara():desactivarCamara();}
+  try{window.parent.postMessage({action:'slideChanged',index:cur},'*');}catch(_){}
 });
-${particlesJs}
+(()=>{
+  const em=${JSON.stringify(emojis)};
+  const pc=document.getElementById('pc');
+  for(let i=0;i<22;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    p.textContent=em[i%em.length];
+    p.style.cssText='left:'+Math.random()*100+'%;font-size:'+(1.1+Math.random()*1.5)+'rem;animation-duration:'+(9+Math.random()*13)+'s;animation-delay:-'+(Math.random()*14)+'s';
+    pc.appendChild(p);
+  }
+})();
 <\/script>
 </body>
 </html>`;
