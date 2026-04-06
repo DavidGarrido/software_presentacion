@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Template Institucional</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:#f7f5f0; font-family:'Source Sans 3','Segoe UI',sans-serif; }
+:root { --navy:#1a2e4a; --gold:#c5922a; --cream:#f7f5f0; --border:rgba(26,46,74,.12); }
+
+/* Bandas institucionales */
+#top-band {
+    position:fixed; top:0; left:0; right:0; z-index:10;
+    display:flex; height:6px;
+}
+.band-seg { flex:1; }
+
+#stage { position:fixed; inset:0; z-index:3; }
+
+.slide {
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:0;
+    opacity:0; transform:translateY(10px);
+    transition:opacity .5s ease, transform .5s ease;
+    pointer-events:none;
+    background:var(--cream);
+}
+.slide.active { opacity:1; transform:translateY(0); pointer-events:auto; }
+.slide.exit   { opacity:0; transform:translateY(-10px); }
+
+/* Header institucional */
+.inst-header {
+    position:absolute; top:0; left:0; right:0;
+    background:var(--navy);
+    padding:12px 48px;
+    display:flex; align-items:center; gap:20px;
+    z-index:2;
+}
+.inst-logo {
+    width:44px; height:44px; border-radius:50%;
+    background:rgba(255,255,255,.1);
+    border:2px solid var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.3rem; flex-shrink:0;
+}
+.inst-title {
+    font-family:'Libre Baskerville',Georgia,serif;
+    font-size:clamp(.6rem,.85vw,.75rem); color:rgba(255,255,255,.7);
+    letter-spacing:.06em; line-height:1.4;
+}
+.inst-title strong { color:#fff; display:block; font-size:1.15em; }
+
+/* Footer institucional */
+.inst-footer {
+    position:absolute; bottom:0; left:0; right:0;
+    background:var(--navy); height:36px;
+    display:flex; align-items:center; padding:0 48px;
+    gap:12px; z-index:2;
+}
+.inst-footer-tag {
+    font-size:.6rem; color:rgba(255,255,255,.5);
+    letter-spacing:.1em; text-transform:uppercase;
+}
+.inst-footer-sep { width:1px; height:14px; background:rgba(255,255,255,.2); }
+.inst-footer-num { margin-left:auto; font-size:.6rem; color:rgba(255,255,255,.4); letter-spacing:.08em; }
+.inst-footer-num em { color:var(--gold); font-style:normal; }
+
+/* Banda de color lateral */
+.slide-accent {
+    position:absolute; left:0; top:70px; bottom:36px;
+    width:5px; background:var(--gold); z-index:2;
+}
+
+/* Contenido */
+.slide-body {
+    position:relative; z-index:5;
+    padding:clamp(1.5rem,5vh,3rem) 48px clamp(1.5rem,4vh,2.5rem) 64px;
+    display:flex; flex-direction:column; gap:1em;
+    margin-top:70px; margin-bottom:36px;
+    height:calc(100% - 106px);
+    justify-content:center;
+}
+
+.tag {
+    font-size:clamp(.48rem,.75vw,.62rem);
+    font-weight:600; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--gold);
+}
+
+h1 {
+    font-family:'Libre Baskerville',Georgia,serif;
+    font-size:clamp(1.6rem,4.5vw,3.4rem);
+    font-weight:700; color:var(--navy);
+    line-height:1.15; letter-spacing:-.01em;
+}
+.acc { color:var(--gold); }
+
+.subtitle {
+    font-size:clamp(.85rem,1.7vw,1.2rem);
+    color:rgba(26,46,74,.55); font-weight:300; line-height:1.65;
+    font-style:italic;
+}
+
+/* Separador */
+.rule { display:flex; align-items:center; gap:10px; }
+.rule-line { flex:0 0 40px; height:2px; background:var(--gold); }
+.rule-dot  { width:5px; height:5px; border-radius:50%; background:var(--gold); }
+
+/* Bullets */
+.bullets { list-style:none; display:flex; flex-direction:column; gap:.55em; }
+.bullets li {
+    font-size:clamp(.8rem,1.6vw,1.08rem); color:rgba(26,46,74,.82); line-height:1.6;
+    padding:.55em 1em .55em 0;
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:flex-start; gap:1em;
+}
+.bullets li::before { content:'▸'; color:var(--gold); flex-shrink:0; margin-top:.1em; }
+
+/* Highlight */
+.hl-box {
+    background:var(--navy); border-radius:4px;
+    padding:1.4em 2em;
+    font-family:'Libre Baskerville',Georgia,serif;
+    font-size:clamp(1rem,2.8vw,2rem);
+    font-weight:400; font-style:italic; color:#fff; line-height:1.4; text-align:center;
+    border-left:5px solid var(--gold);
+}
+
+/* Image */
+.img-wrap { width:100%; max-height:52vh; overflow:hidden; border-radius:3px; border:1px solid var(--border); box-shadow:0 4px 20px rgba(26,46,74,.12); }
+.img-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
+
+/* Cover especial */
+.cover-body {
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    justify-content:center; gap:1.2em;
+    padding:80px 10% 50px;
+}
+.cover-body h1 { font-size:clamp(2rem,6vw,4.5rem); }
+.cover-emblem {
+    width:clamp(70px,10vw,100px); height:clamp(70px,10vw,100px);
+    border-radius:50%; background:var(--navy);
+    border:3px solid var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    font-size:clamp(1.8rem,4vw,3rem);
+}
+</style>
+</head>
+<body>
+
+<div id="top-band">
+    <div class="band-seg" style="background:#1a2e4a;flex:3;"></div>
+    <div class="band-seg" style="background:#c5922a;flex:1;"></div>
+</div>
+
+<div id="stage"></div>
+
+<div id="camWrap" style="display:none;position:fixed;z-index:50;cursor:move;user-select:none;overflow:hidden;">
+    <video id="camFeed" autoplay muted playsinline style="display:block;width:100%;height:100%;object-fit:cover;"></video>
+</div>
+
+<script>
+let slides=[], cur=0, busy=false;
+let presName='Presentación Institucional';
+
+function setAccent(c){ if(!c)return; document.documentElement.style.setProperty('--gold',c); }
+function mark(t){ return(t||'').replace(/\|\|(.+?)\|\|/g,'<span class="acc">$1</span>'); }
+
+function buildSlide(s,idx){
+    const lines=(s.content||'').split('\n').map(l=>l.trim()).filter(Boolean);
+    const isFirst=idx===0,isLast=idx===slides.length-1;
+    const isCover=s.layout==='cover'||(isFirst&&!s.layout)||(isLast&&!s.layout);
+    const d=document.createElement('div');
+    d.className='slide'; d.dataset.index=idx;
+
+    const header=`<div class="inst-header">
+        <div class="inst-logo">🏛</div>
+        <div class="inst-title"><strong>${presName}</strong>${s.tag||''}</div>
+    </div>`;
+    const footer=`<div class="inst-footer">
+        <span class="inst-footer-tag">${s.tag||''}</span>
+        <span class="inst-footer-sep"></span>
+        <span class="inst-footer-tag">${new Date().getFullYear()}</span>
+        <span class="inst-footer-num"><em>${idx+1}</em> / ${slides.length}</span>
+    </div>`;
+
+    if(isCover){
+        d.innerHTML=`${header}${footer}
+        <div class="cover-body">
+            <div class="cover-emblem">🏛</div>
+            <div class="tag">${s.tag||''}</div>
+            <div class="rule"><div class="rule-line"></div><div class="rule-dot"></div><div class="rule-line"></div></div>
+            <h1>${mark(s.title||'')}</h1>
+            ${lines[0]?`<p class="subtitle">${mark(lines.join(' · '))}</p>`:''}
+        </div>`;
+    } else if(s.layout==='highlight'){
+        d.innerHTML=`${header}${footer}
+        <div class="slide-accent"></div>
+        <div class="slide-body">
+            <div class="tag">${s.tag||''}</div>
+            <h1>${mark(s.title||'')}</h1>
+            <div class="hl-box">${mark(lines.join('<br>'))}</div>
+        </div>`;
+    } else if(s.layout==='image'){
+        d.innerHTML=`${header}${footer}
+        <div class="slide-accent"></div>
+        <div class="slide-body">
+            <div class="tag">${s.tag||''}</div>
+            <h1>${mark(s.title||'')}</h1>
+            <div class="img-wrap"><img src="${lines[0]||''}" alt="${s.title||''}"></div>
+        </div>`;
+    } else {
+        d.innerHTML=`${header}${footer}
+        <div class="slide-accent"></div>
+        <div class="slide-body">
+            <div class="tag">${s.tag||''}</div>
+            <h1>${mark(s.title||'')}</h1>
+            <div class="rule"><div class="rule-line"></div><div class="rule-dot"></div></div>
+            <ul class="bullets">${lines.map(l=>`<li>${mark(l)}</li>`).join('')}</ul>
+        </div>`;
+    }
+    return d;
+}
+
+function load(data,startIdx=0){
+    slides=data.slides||[];
+    presName=data.name||'Presentación Institucional';
+    if(data.accentColor)setAccent(data.accentColor);
+    const stage=document.getElementById('stage');
+    stage.innerHTML='';
+    slides.forEach((s,i)=>stage.appendChild(buildSlide(s,i)));
+    show(startIdx,false);
+}
+
+function show(idx,animate=true){
+    if(!slides.length||busy)return;
+    idx=Math.max(0,Math.min(idx,slides.length-1));
+    const prev=document.querySelector('.slide.active');
+    const next=document.querySelectorAll('.slide')[idx];
+    if(!next||prev===next)return;
+    if(animate&&prev){busy=true;prev.classList.add('exit');setTimeout(()=>{prev.classList.remove('active','exit');busy=false;},500);}
+    else if(prev){prev.classList.remove('active','exit');}
+    next.classList.add('active');
+    cur=idx;
+    try{window.parent.postMessage({action:'slideChanged',index:idx},'*');}catch(e){}
+}
+
+let camStream=null,camDrag=false,ox=0,oy=0;
+const camWrap=document.getElementById('camWrap'),camFeed=document.getElementById('camFeed');
+function camSz(size,shape){const w=Math.round(window.innerWidth*(parseInt(size)/100));return{w,h:shape==='circle'?w:Math.round(w*9/16)};}
+function camPos(pos,w,h){const pad=Math.round(window.innerWidth*.018),vw=window.innerWidth,vh=window.innerHeight;if(pos==='tl')return{x:pad,y:pad};if(pos==='tr')return{x:vw-w-pad,y:pad};if(pos==='bl')return{x:pad,y:vh-h-pad};if(pos==='center')return{x:(vw-w)/2,y:(vh-h)/2};if(pos==='full')return{x:0,y:0};return{x:vw-w-pad,y:vh-h-pad};}
+function applyCam(cfg){const isFull=cfg.pos==='full';const{w,h}=isFull?{w:window.innerWidth,h:window.innerHeight}:camSz(cfg.size,cfg.shape);const{x,y}=camPos(cfg.pos,w,h);const r=isFull?'0':cfg.shape==='circle'?'50%':Math.round(w*.06)+'px';camWrap.style.cssText=`position:fixed;z-index:50;cursor:move;user-select:none;width:${w}px;height:${h}px;left:${x}px;top:${y}px;border-radius:${r};overflow:hidden;border:${isFull?'none':'2px solid rgba(26,46,74,.4)'};box-shadow:${isFull?'none':'0 4px 24px rgba(0,0,0,.2)'};`;camFeed.style.cssText=`width:${w}px;height:${h}px;object-fit:cover;display:block;transform:scaleX(${cfg.mirror?-1:1});`;}
+async function startCam(cfg){if(!camStream){try{camStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});camFeed.srcObject=camStream;}catch(e){return;}}applyCam(cfg);camWrap.style.display='block';if(window.parent!==window.top)camWrap.style.display='none';}
+function stopCam(){camWrap.style.display='none';if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}camFeed.srcObject=null;}
+camWrap.addEventListener('pointerdown',e=>{camDrag=true;ox=e.clientX-camWrap.offsetLeft;oy=e.clientY-camWrap.offsetTop;camWrap.setPointerCapture(e.pointerId);});
+camWrap.addEventListener('pointermove',e=>{if(camDrag){camWrap.style.left=(e.clientX-ox)+'px';camWrap.style.top=(e.clientY-oy)+'px';}});
+camWrap.addEventListener('pointerup',()=>camDrag=false);
+
+window.addEventListener('message',e=>{
+    const d=e.data;if(!d)return;
+    if(d.action==='load'&&d.slides)load(d,d.index??0);
+    if(d.action==='goto')show(d.index);
+    if(d.action==='next')show(cur+1);
+    if(d.action==='prev')show(cur-1);
+    if(d.action==='camera'){if(d.enabled)startCam(d);else stopCam();}
+});
+document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' ')show(cur+1);
+    if(e.key==='ArrowLeft'||e.key==='ArrowUp')show(cur-1);
+});
+</script>
+</body>
+</html>

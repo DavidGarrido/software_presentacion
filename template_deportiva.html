@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Template Deportiva</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:#0a0a0a; font-family:'Barlow','Segoe UI',sans-serif; }
+:root { --red:#e63946; --yellow:#ffd60a; --dark:#0a0a0a; --mid:#111; --light:#eee; }
+
+/* Fondo dinámico */
+#bg {
+    position:fixed; inset:0; z-index:0;
+    background:var(--dark);
+    overflow:hidden;
+}
+#bg::before {
+    content:''; position:absolute; inset:0;
+    background:
+        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(230,57,70,.18) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255,214,10,.08) 0%, transparent 55%);
+}
+
+/* Líneas de velocidad */
+#speed-lines { position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
+.speed-line {
+    position:absolute; height:1px; background:linear-gradient(90deg,transparent,rgba(230,57,70,.4),transparent);
+    animation:rush linear infinite;
+}
+@keyframes rush {
+    from { transform:translateX(-100%); opacity:0; }
+    10%  { opacity:1; }
+    90%  { opacity:1; }
+    to   { transform:translateX(100vw); opacity:0; }
+}
+
+/* Patrón hexagonal sutil */
+#hex-bg {
+    position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.04;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16l28-16 28 16v34z' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E");
+    background-size:56px 100px;
+}
+
+#stage { position:fixed; inset:0; z-index:2; }
+
+.slide {
+    position:absolute; inset:0; padding:0;
+    display:flex; flex-direction:column;
+    opacity:0; transform:translateX(60px);
+    transition:opacity .4s ease, transform .4s cubic-bezier(.25,.46,.45,.94);
+    pointer-events:none;
+}
+.slide.active { opacity:1; transform:translateX(0); pointer-events:auto; }
+.slide.exit   { opacity:0; transform:translateX(-60px); }
+
+/* === COVER === */
+.cover-wrap {
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    height:100%; padding:5% 8%; text-align:center; position:relative;
+}
+.cover-number {
+    position:absolute; right:5%; bottom:5%;
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:30vw; font-weight:900; line-height:1;
+    color:rgba(255,255,255,.03); pointer-events:none; user-select:none;
+    letter-spacing:-.05em;
+}
+.cover-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:clamp(.55rem,.9vw,.75rem); font-weight:700;
+    letter-spacing:.22em; text-transform:uppercase;
+    color:var(--yellow); background:rgba(255,214,10,.1);
+    border:1px solid rgba(255,214,10,.3); border-radius:3px;
+    padding:.35em 1.2em; margin-bottom:1em;
+}
+.cover-title {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:clamp(2.5rem,9vw,7rem); font-weight:900;
+    line-height:.95; letter-spacing:-.02em;
+    text-transform:uppercase; color:#fff;
+    text-shadow:0 0 60px rgba(230,57,70,.4);
+}
+.cover-title .acc { color:var(--red); }
+.cover-sub {
+    font-size:clamp(.85rem,1.8vw,1.2rem); font-weight:300;
+    color:rgba(255,255,255,.55); margin-top:1em; line-height:1.6;
+    max-width:600px;
+}
+.cover-divider {
+    width:80px; height:4px; margin:1.2em auto;
+    background:linear-gradient(90deg,var(--red),var(--yellow));
+    border-radius:2px;
+}
+
+/* === HEADER === */
+.sport-header {
+    position:absolute; top:0; left:0; right:0; z-index:10;
+    height:52px;
+    display:flex; align-items:center; padding:0 40px;
+    background:rgba(0,0,0,.7); backdrop-filter:blur(8px);
+    border-bottom:2px solid var(--red);
+    gap:16px;
+}
+.sport-header-icon {
+    font-size:1.4rem; line-height:1;
+}
+.sport-header-name {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:clamp(.65rem,.9vw,.8rem); font-weight:700;
+    letter-spacing:.14em; text-transform:uppercase;
+    color:rgba(255,255,255,.8);
+}
+.sport-header-sep { flex:1; }
+.sport-header-tag {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:clamp(.55rem,.75vw,.65rem); font-weight:600;
+    letter-spacing:.18em; text-transform:uppercase;
+    color:var(--yellow); background:rgba(255,214,10,.1);
+    border:1px solid rgba(255,214,10,.25);
+    border-radius:2px; padding:.25em .8em;
+}
+
+/* === FOOTER BAR === */
+.sport-footer {
+    position:absolute; bottom:0; left:0; right:0;
+    height:32px; background:var(--red);
+    display:flex; align-items:center; padding:0 40px;
+    gap:12px; z-index:10;
+}
+.sport-footer-text {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:.6rem; font-weight:700;
+    letter-spacing:.2em; text-transform:uppercase;
+    color:rgba(255,255,255,.8);
+}
+.sport-footer-num {
+    margin-left:auto;
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:.75rem; font-weight:900;
+    color:#fff; letter-spacing:.08em;
+}
+
+/* === BODY === */
+.slide-body {
+    position:relative; z-index:5;
+    padding:clamp(1rem,4vh,2.5rem) 48px;
+    margin-top:52px; margin-bottom:32px;
+    height:calc(100% - 84px);
+    display:flex; flex-direction:column; gap:1.1em;
+    justify-content:center;
+}
+
+/* Línea de acento izquierda */
+.slide-body::before {
+    content:''; position:absolute; left:0; top:20%; bottom:20%;
+    width:4px; background:linear-gradient(180deg,var(--red),var(--yellow));
+    border-radius:2px;
+}
+
+.tag {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:clamp(.5rem,.78vw,.65rem); font-weight:700;
+    letter-spacing:.22em; text-transform:uppercase;
+    color:var(--yellow);
+    display:flex; align-items:center; gap:8px;
+}
+.tag::before { content:''; width:20px; height:2px; background:var(--yellow); display:inline-block; }
+
+h1 {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:clamp(1.8rem,5.5vw,4.2rem);
+    font-weight:900; line-height:.95;
+    text-transform:uppercase; letter-spacing:-.01em;
+    color:#fff;
+}
+.acc { color:var(--red); }
+
+/* Bullets estilo tarjeta de equipo */
+.bullets { list-style:none; display:flex; flex-direction:column; gap:.5em; }
+.bullets li {
+    display:flex; align-items:center; gap:1em;
+    font-size:clamp(.8rem,1.6vw,1.05rem); font-weight:400;
+    color:rgba(255,255,255,.85); line-height:1.5;
+    padding:.7em 1em .7em 1.2em;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.07);
+    border-left:3px solid var(--red);
+    border-radius:0 8px 8px 0;
+    transition:background .2s;
+}
+.bullets li:nth-child(3n+2) { border-left-color:var(--yellow); }
+.bullet-num {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:1.1rem; font-weight:900; color:var(--red);
+    min-width:24px; text-align:center; line-height:1;
+}
+.bullets li:nth-child(3n+2) .bullet-num { color:var(--yellow); }
+
+/* Highlight tipo marcador */
+.hl-box {
+    background:var(--red);
+    border-radius:6px;
+    padding:1.4em 2em;
+    text-align:center;
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:clamp(1.2rem,3.5vw,2.5rem);
+    font-weight:900; text-transform:uppercase; letter-spacing:.02em;
+    color:#fff; line-height:1.2;
+    box-shadow:0 8px 32px rgba(230,57,70,.4);
+    position:relative; overflow:hidden;
+}
+.hl-box::after {
+    content:''; position:absolute; bottom:-20px; right:-20px;
+    width:120px; height:120px; border-radius:50%;
+    background:rgba(255,214,10,.1);
+}
+
+/* Image */
+.img-wrap { width:100%; max-height:52vh; overflow:hidden; border-radius:6px; border:2px solid rgba(230,57,70,.4); box-shadow:0 8px 32px rgba(0,0,0,.5); }
+.img-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
+
+/* Dots */
+.dots { position:fixed; bottom:44px; right:24px; z-index:100; display:flex; flex-direction:column; gap:6px; }
+.dot { width:6px; height:6px; border-radius:3px; background:rgba(255,255,255,.2); cursor:pointer; transition:all .3s; border:none; outline:none; }
+.dot.active { background:var(--red); height:18px; }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="hex-bg"></div>
+<div id="speed-lines"></div>
+<div id="stage"></div>
+<div class="dots" id="dots"></div>
+<div id="camWrap" style="display:none;position:fixed;z-index:50;cursor:move;user-select:none;overflow:hidden;">
+    <video id="camFeed" autoplay muted playsinline style="display:block;width:100%;height:100%;object-fit:cover;"></video>
+</div>
+<script>
+let slides=[], cur=0, busy=false;
+let presName='Presentación';
+
+function setAccent(c){ if(!c)return; document.documentElement.style.setProperty('--red',c); }
+function mark(t){ return(t||'').replace(/\|\|(.+?)\|\|/g,'<span class="acc">$1</span>'); }
+
+function spawnSpeedLines(){
+    const cont=document.getElementById('speed-lines');
+    for(let i=0;i<6;i++){
+        const l=document.createElement('div');
+        l.className='speed-line';
+        const top=10+Math.random()*80;
+        const dur=1.5+Math.random()*2.5;
+        const w=100+Math.random()*200;
+        l.style.cssText=`top:${top}%;width:${w}px;animation-duration:${dur}s;animation-delay:${Math.random()*dur}s;`;
+        cont.appendChild(l);
+    }
+}
+spawnSpeedLines();
+
+function buildSlide(s,idx){
+    const lines=(s.content||'').split('\n').map(l=>l.trim()).filter(Boolean);
+    const isFirst=idx===0,isLast=idx===slides.length-1;
+    const isCover=s.layout==='cover'||(isFirst&&!s.layout)||(isLast&&!s.layout);
+    const d=document.createElement('div');
+    d.className='slide'; d.dataset.index=idx;
+
+    const header=`<div class="sport-header">
+        <span class="sport-header-icon">⚡</span>
+        <span class="sport-header-name">${presName}</span>
+        <span class="sport-header-sep"></span>
+        ${s.tag?`<span class="sport-header-tag">${s.tag}</span>`:''}
+    </div>`;
+    const footer=`<div class="sport-footer">
+        <span class="sport-footer-text">${s.tag||'Presentación'}</span>
+        <span class="sport-footer-num">${String(idx+1).padStart(2,'0')} / ${String(slides.length).padStart(2,'0')}</span>
+    </div>`;
+
+    if(isCover){
+        d.innerHTML=`
+        <div class="cover-wrap">
+            <div class="cover-number">⚡</div>
+            <div class="cover-badge">⚡ ${s.tag||'Presentación'}</div>
+            <h1 class="cover-title">${mark(s.title||'')}</h1>
+            <div class="cover-divider"></div>
+            ${lines[0]?`<p class="cover-sub">${mark(lines.join(' · '))}</p>`:''}
+        </div>`;
+    } else if(s.layout==='highlight'){
+        const buls=lines.map((l,i)=>`<li><span class="bullet-num">${String(i+1).padStart(2,'0')}</span>${mark(l)}</li>`).join('');
+        d.innerHTML=`${header}${footer}
+        <div class="slide-body">
+            ${s.tag?`<div class="tag">${s.tag}</div>`:''}
+            <h1>${mark(s.title||'')}</h1>
+            <div class="hl-box">${mark(lines.join('<br>'))}</div>
+        </div>`;
+    } else if(s.layout==='image'){
+        d.innerHTML=`${header}${footer}
+        <div class="slide-body">
+            ${s.tag?`<div class="tag">${s.tag}</div>`:''}
+            <h1>${mark(s.title||'')}</h1>
+            <div class="img-wrap"><img src="${lines[0]||''}" alt="${s.title||''}"></div>
+        </div>`;
+    } else {
+        const buls=lines.map((l,i)=>`<li><span class="bullet-num">${String(i+1).padStart(2,'0')}</span>${mark(l)}</li>`).join('');
+        d.innerHTML=`${header}${footer}
+        <div class="slide-body">
+            ${s.tag?`<div class="tag">${s.tag}</div>`:''}
+            <h1>${mark(s.title||'')}</h1>
+            <ul class="bullets">${buls}</ul>
+        </div>`;
+    }
+    return d;
+}
+
+function buildDots(){
+    const cont=document.getElementById('dots');
+    cont.innerHTML='';
+    slides.forEach((_,i)=>{
+        const d=document.createElement('button');
+        d.className='dot'+(i===0?' active':'');
+        d.onclick=()=>show(i);
+        cont.appendChild(d);
+    });
+}
+
+function load(data,startIdx=0){
+    slides=data.slides||[];
+    presName=data.name||'Presentación';
+    if(data.accentColor)setAccent(data.accentColor);
+    const stage=document.getElementById('stage');
+    stage.innerHTML='';
+    slides.forEach((s,i)=>stage.appendChild(buildSlide(s,i)));
+    buildDots();
+    show(startIdx,false);
+}
+
+function show(idx,animate=true){
+    if(!slides.length||busy)return;
+    idx=Math.max(0,Math.min(idx,slides.length-1));
+    const prev=document.querySelector('.slide.active');
+    const next=document.querySelectorAll('.slide')[idx];
+    if(!next||prev===next)return;
+    if(animate&&prev){busy=true;prev.classList.add('exit');setTimeout(()=>{prev.classList.remove('active','exit');busy=false;},400);}
+    else if(prev){prev.classList.remove('active','exit');}
+    next.classList.add('active');
+    cur=idx;
+    document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+    try{window.parent.postMessage({action:'slideChanged',index:idx},'*');}catch(e){}
+}
+
+let camStream=null,camDrag=false,ox=0,oy=0;
+const camWrap=document.getElementById('camWrap'),camFeed=document.getElementById('camFeed');
+function camSz(size,shape){const w=Math.round(window.innerWidth*(parseInt(size)/100));return{w,h:shape==='circle'?w:Math.round(w*9/16)};}
+function camPos(pos,w,h){const pad=Math.round(window.innerWidth*.018),vw=window.innerWidth,vh=window.innerHeight;if(pos==='tl')return{x:pad,y:pad};if(pos==='tr')return{x:vw-w-pad,y:pad};if(pos==='bl')return{x:pad,y:vh-h-pad};if(pos==='center')return{x:(vw-w)/2,y:(vh-h)/2};if(pos==='full')return{x:0,y:0};return{x:vw-w-pad,y:vh-h-pad};}
+function applyCam(cfg){const isFull=cfg.pos==='full';const{w,h}=isFull?{w:window.innerWidth,h:window.innerHeight}:camSz(cfg.size,cfg.shape);const{x,y}=camPos(cfg.pos,w,h);const r=isFull?'0':cfg.shape==='circle'?'50%':Math.round(w*.06)+'px';camWrap.style.cssText=`position:fixed;z-index:50;cursor:move;user-select:none;width:${w}px;height:${h}px;left:${x}px;top:${y}px;border-radius:${r};overflow:hidden;border:${isFull?'none':'2px solid rgba(230,57,70,.5)'};box-shadow:${isFull?'none':'0 4px 24px rgba(0,0,0,.5)'};`;camFeed.style.cssText=`width:${w}px;height:${h}px;object-fit:cover;display:block;transform:scaleX(${cfg.mirror?-1:1});`;}
+async function startCam(cfg){if(!camStream){try{camStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});camFeed.srcObject=camStream;}catch(e){return;}}applyCam(cfg);camWrap.style.display='block';if(window.parent!==window.top)camWrap.style.display='none';}
+function stopCam(){camWrap.style.display='none';if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}camFeed.srcObject=null;}
+camWrap.addEventListener('pointerdown',e=>{camDrag=true;ox=e.clientX-camWrap.offsetLeft;oy=e.clientY-camWrap.offsetTop;camWrap.setPointerCapture(e.pointerId);});
+camWrap.addEventListener('pointermove',e=>{if(camDrag){camWrap.style.left=(e.clientX-ox)+'px';camWrap.style.top=(e.clientY-oy)+'px';}});
+camWrap.addEventListener('pointerup',()=>camDrag=false);
+
+window.addEventListener('message',e=>{
+    const d=e.data;if(!d)return;
+    if(d.action==='load'&&d.slides)load(d,d.index??0);
+    if(d.action==='goto')show(d.index);
+    if(d.action==='next')show(cur+1);
+    if(d.action==='prev')show(cur-1);
+    if(d.action==='camera'){if(d.enabled)startCam(d);else stopCam();}
+});
+document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' ')show(cur+1);
+    if(e.key==='ArrowLeft'||e.key==='ArrowUp')show(cur-1);
+});
+</script>
+</body>
+</html>

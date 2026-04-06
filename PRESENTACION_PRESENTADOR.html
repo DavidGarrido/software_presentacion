@@ -2632,6 +2632,80 @@ function tplPreviewHTML(p) {
             </div>
         </div>`;
 
+    if (style === 'tech') return `
+        <div style="background:${bg};height:100%;padding:10px;position:relative;overflow:hidden;
+            background-image:linear-gradient(${a}06 1px,transparent 1px),linear-gradient(90deg,${a}06 1px,transparent 1px);
+            background-size:14px 14px;">
+            <div style="position:absolute;bottom:6px;right:8px;font-size:.4rem;color:${a}88;letter-spacing:.12em;font-family:monospace;">12:34:56</div>
+            <div style="height:100%;display:flex;align-items:center;gap:8px;padding:4px;">
+                <div style="width:2px;height:55px;background:linear-gradient(to bottom,transparent,${a},transparent);flex-shrink:0;"></div>
+                <div style="display:flex;flex-direction:column;gap:3px;">
+                    <span style="font-size:.38rem;letter-spacing:.15em;color:${a}80;font-family:monospace;">sys &gt; MÓDULO</span>
+                    <span style="font-size:.9rem;font-weight:700;color:${a};line-height:1.05;font-family:monospace;">TÍTULO<br>TECH</span>
+                    <div style="display:flex;flex-direction:column;gap:2px;margin-top:2px;">
+                        <span style="font-size:.42rem;color:rgba(255,255,255,.75);padding:2px 5px;background:${a}0d;border:1px solid ${a}22;border-radius:2px;font-family:monospace;">▸ dato_01</span>
+                        <span style="font-size:.42rem;color:rgba(255,255,255,.75);padding:2px 5px;background:${a}0d;border:1px solid ${a}22;border-radius:2px;font-family:monospace;">▸ dato_02</span>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+    if (style === 'institutional') return `
+        <div style="background:${bg};height:100%;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:0;left:0;right:0;height:18px;background:#1a2e4a;display:flex;align-items:center;padding:0 8px;gap:5px;">
+                <span style="font-size:1rem;line-height:1;">🏛</span>
+                <span style="font-size:.38rem;color:rgba(255,255,255,.7);letter-spacing:.08em;text-transform:uppercase;">Institución</span>
+            </div>
+            <div style="position:absolute;bottom:0;left:0;right:0;height:12px;background:${a};"></div>
+            <div style="position:absolute;left:0;top:18px;bottom:12px;width:3px;background:${a};"></div>
+            <div style="padding:22px 10px 16px 14px;display:flex;flex-direction:column;gap:4px;height:100%;justify-content:center;">
+                <span style="font-size:.38rem;letter-spacing:.18em;text-transform:uppercase;color:${a};font-weight:600;">CATEGORÍA</span>
+                <span style="font-family:Georgia,serif;font-size:.95rem;font-weight:700;color:#1a2e4a;line-height:1.1;">Título<br>Institucional</span>
+                <div style="width:28px;height:2px;background:${a};margin:2px 0;"></div>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                    <span style="font-size:.44rem;color:rgba(26,46,74,.8);padding:2px 0;border-bottom:1px solid rgba(197,146,42,.2);">▸ Punto uno</span>
+                    <span style="font-size:.44rem;color:rgba(26,46,74,.8);padding:2px 0;border-bottom:1px solid rgba(197,146,42,.2);">▸ Punto dos</span>
+                </div>
+            </div>
+        </div>`;
+
+    if (style === 'educational') return `
+        <div style="background:${bg};height:100%;padding:10px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:10%;left:-5%;width:70px;height:70px;border-radius:50%;background:#ff6b6b;opacity:.06;"></div>
+            <div style="position:absolute;bottom:5%;right:-5%;width:90px;height:90px;border-radius:50%;background:#4d96ff;opacity:.06;"></div>
+            <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 12px;width:100%;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden;">
+                <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#ff6b6b,#ffd93d,${a},#4d96ff,#c77dff);"></div>
+                <span style="font-size:1.2rem;text-align:center;">🎓</span>
+                <span style="font-size:.42rem;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:rgba(255,255,255,.12);border-radius:999px;padding:1px 7px;text-align:center;">CATEGORÍA</span>
+                <span style="font-size:.9rem;font-weight:800;color:#fff;line-height:1.1;text-align:center;">Título<br>Educativo</span>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                    <span style="font-size:.42rem;color:rgba(255,255,255,.9);padding:2px 5px;background:rgba(255,255,255,.07);border-radius:5px;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:rgba(255,107,107,.4);display:inline-block;flex-shrink:0;"></span>Punto uno</span>
+                    <span style="font-size:.42rem;color:rgba(255,255,255,.9);padding:2px 5px;background:rgba(255,255,255,.07);border-radius:5px;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:rgba(77,150,255,.4);display:inline-block;flex-shrink:0;"></span>Punto dos</span>
+                </div>
+            </div>
+        </div>`;
+
+    if (style === 'sports') return `
+        <div style="background:${bg};height:100%;position:relative;overflow:hidden;">
+            <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 0%,${a}18,transparent 60%);"></div>
+            <div style="position:absolute;top:0;left:0;right:0;height:16px;background:rgba(0,0,0,.7);border-bottom:2px solid ${a};display:flex;align-items:center;padding:0 8px;gap:5px;">
+                <span style="font-size:.6rem;">⚡</span>
+                <span style="font-size:.38rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.8);">DEPORTES</span>
+            </div>
+            <div style="position:absolute;bottom:0;left:0;right:0;height:10px;background:${a};display:flex;align-items:center;padding:0 8px;">
+                <span style="font-size:.35rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#fff;margin-left:auto;">01 / 08</span>
+            </div>
+            <div style="padding:20px 10px 14px 14px;display:flex;flex-direction:column;gap:4px;height:100%;justify-content:center;position:relative;">
+                <div style="position:absolute;left:0;top:25%;bottom:25%;width:3px;background:linear-gradient(180deg,${a},#ffd60a);border-radius:2px;"></div>
+                <span style="font-size:.38rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#ffd60a;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:1px;background:#ffd60a;"></span>CATEGORÍA</span>
+                <span style="font-size:1rem;font-weight:900;color:#fff;line-height:.95;text-transform:uppercase;letter-spacing:-.01em;">TÍTULO<br>DEPORTIVO</span>
+                <div style="display:flex;flex-direction:column;gap:2px;margin-top:2px;">
+                    <span style="font-size:.42rem;color:rgba(255,255,255,.85);padding:2px 5px;background:rgba(255,255,255,.04);border-left:3px solid ${a};border-radius:0 4px 4px 0;"><span style="color:${a};font-weight:900;margin-right:4px;">01</span>Punto uno</span>
+                    <span style="font-size:.42rem;color:rgba(255,255,255,.85);padding:2px 5px;background:rgba(255,255,255,.04);border-left:3px solid #ffd60a;border-radius:0 4px 4px 0;"><span style="color:#ffd60a;font-weight:900;margin-right:4px;">02</span>Punto dos</span>
+                </div>
+            </div>
+        </div>`;
+
     // minimal u otros
     return `
         <div style="background:${bg};height:100%;padding:14px 18px;display:flex;align-items:center;justify-content:center;">
@@ -2648,15 +2722,8 @@ async function loadTemplates() {
         const res = await fetch('templates.json?_=' + Date.now());
         availableTemplates = await res.json();
     } catch(e) {
-        // Fallback si no se puede leer el JSON (file://)
-        availableTemplates = [
-            { id:'viewer',       file:'viewer.html',               name:'Clásico',     description:'Visor original.',         badge:'Por defecto', badgeColor:'rgba(0,212,255,.12)', badgeText:'#00d4ff', preview:{bg:'#06060f',accent:'#00d4ff',style:'classic'} },
-            { id:'corporativo',  file:'template_corporativo.html', name:'Corporativo', description:'Geométrico, profesional.', badge:'Nuevo',       badgeColor:'rgba(100,200,255,.1)',badgeText:'#64c8ff', preview:{bg:'linear-gradient(145deg,#06060f,#0a0a2e)',accent:'#00d4ff',style:'corporate'} },
-            { id:'moderno',      file:'template_moderno.html',     name:'Moderno',     description:'Glassmorphism.',           badge:'Nuevo',       badgeColor:'rgba(160,80,255,.12)',badgeText:'#c084fc', preview:{bg:'linear-gradient(135deg,#1a0040,#3d0080)',accent:'#a855f7',style:'modern'} },
-            { id:'elegante',     file:'template_elegante.html',    name:'Elegante',    description:'Serif, fondo claro.',      badge:'Nuevo',       badgeColor:'rgba(139,105,20,.1)', badgeText:'#8b6914', preview:{bg:'#f5f0eb',accent:'#8b6914',style:'elegant'} },
-            { id:'neon',         file:'template_neon.html',        name:'Neón',        description:'Rejilla tech, glow.',      badge:'Nuevo',       badgeColor:'rgba(0,255,245,.1)',  badgeText:'#00fff5', preview:{bg:'#000',accent:'#00fff5',style:'neon'} },
-            { id:'bold',         file:'template_bold.html',        name:'Bold',        description:'Tipografía gigante.',      badge:'Nuevo',       badgeColor:'rgba(255,59,92,.12)', badgeText:'#ff3b5c', preview:{bg:'linear-gradient(145deg,#0d0d1a,#1a0028)',accent:'#ff3b5c',style:'bold'} },
-        ];
+        console.warn('No se pudo cargar templates.json', e);
+        availableTemplates = [];
     }
     renderTemplateGrid();
 }

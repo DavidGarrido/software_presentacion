@@ -96,5 +96,61 @@
       "accent": "#111",
       "style": "minimal"
     }
+  },
+  {
+    "id": "tecnologica",
+    "file": "template_tecnologica.html",
+    "name": "Tecnológica",
+    "description": "Circuit board, JetBrains Mono, HUD clock y terminal. Ideal para tech y datos.",
+    "badge": "Nuevo",
+    "badgeColor": "rgba(0,255,136,.1)",
+    "badgeText": "#00ff88",
+    "preview": {
+      "bg": "linear-gradient(145deg,#050f0a,#0a1a10)",
+      "accent": "#00ff88",
+      "style": "tech"
+    }
+  },
+  {
+    "id": "institucional",
+    "file": "template_institucional.html",
+    "name": "Institucional",
+    "description": "Navy y dorado, serif Baskerville, cabecera y pie institucional. Formal y serio.",
+    "badge": "Nuevo",
+    "badgeColor": "rgba(197,146,42,.12)",
+    "badgeText": "#c5922a",
+    "preview": {
+      "bg": "#f7f5f0",
+      "accent": "#c5922a",
+      "style": "institutional"
+    }
+  },
+  {
+    "id": "educativa",
+    "file": "template_educativa.html",
+    "name": "Educativa",
+    "description": "Burbujas de colores, Nunito, tarjeta cristal y emojis animados. Para clases y cursos.",
+    "badge": "Nuevo",
+    "badgeColor": "rgba(107,203,119,.12)",
+    "badgeText": "#6bcb77",
+    "preview": {
+      "bg": "linear-gradient(145deg,#1e1e2e,#2d3561)",
+      "accent": "#6bcb77",
+      "style": "educational"
+    }
+  },
+  {
+    "id": "deportiva",
+    "file": "template_deportiva.html",
+    "name": "Deportiva",
+    "description": "Barlow Condensed, líneas de velocidad, hexágonos y marcador. Energía y dinamismo.",
+    "badge": "Nuevo",
+    "badgeColor": "rgba(230,57,70,.12)",
+    "badgeText": "#e63946",
+    "preview": {
+      "bg": "linear-gradient(145deg,#0a0a0a,#1a0a0a)",
+      "accent": "#e63946",
+      "style": "sports"
+    }
   }
 ]
