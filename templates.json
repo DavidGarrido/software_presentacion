@@ -1,0 +1,100 @@
+[
+  {
+    "id": "viewer",
+    "file": "viewer.html",
+    "name": "Clásico",
+    "description": "Visor original. Oscuro, tipografía limpia, bordes de acento.",
+    "badge": "Por defecto",
+    "badgeColor": "rgba(0,212,255,.12)",
+    "badgeText": "#00d4ff",
+    "preview": {
+      "bg": "linear-gradient(145deg,#06060f,#0a0a2e)",
+      "accent": "#00d4ff",
+      "style": "classic"
+    }
+  },
+  {
+    "id": "corporativo",
+    "file": "template_corporativo.html",
+    "name": "Corporativo",
+    "description": "Geométrico, esquinas decorativas, transiciones suaves. Negocios y ciencia.",
+    "badge": "Nuevo",
+    "badgeColor": "rgba(100,200,255,.1)",
+    "badgeText": "#64c8ff",
+    "preview": {
+      "bg": "linear-gradient(145deg,#06060f,#0a0a2e)",
+      "accent": "#00d4ff",
+      "style": "corporate"
+    }
+  },
+  {
+    "id": "moderno",
+    "file": "template_moderno.html",
+    "name": "Moderno",
+    "description": "Glassmorphism, partículas flotantes, transiciones de escala. Impactante.",
+    "badge": "Nuevo",
+    "badgeColor": "rgba(160,80,255,.12)",
+    "badgeText": "#c084fc",
+    "preview": {
+      "bg": "linear-gradient(135deg,#1a0040,#3d0080,#0a0020)",
+      "accent": "#a855f7",
+      "style": "modern"
+    }
+  },
+  {
+    "id": "elegante",
+    "file": "template_elegante.html",
+    "name": "Elegante",
+    "description": "Fondo claro, tipografía serif, ornamentos dorados. Editorial y sofisticado.",
+    "badge": "Nuevo",
+    "badgeColor": "rgba(139,105,20,.1)",
+    "badgeText": "#8b6914",
+    "preview": {
+      "bg": "#f5f0eb",
+      "accent": "#8b6914",
+      "style": "elegant"
+    }
+  },
+  {
+    "id": "neon",
+    "file": "template_neon.html",
+    "name": "Neón",
+    "description": "Rejilla tech, esquinas luminosas, tipografía Orbitron. Gaming y tecnología.",
+    "badge": "Nuevo",
+    "badgeColor": "rgba(0,255,245,.1)",
+    "badgeText": "#00fff5",
+    "preview": {
+      "bg": "#000",
+      "accent": "#00fff5",
+      "style": "neon"
+    }
+  },
+  {
+    "id": "bold",
+    "file": "template_bold.html",
+    "name": "Bold",
+    "description": "Tipografía Syne gigante en mayúsculas, imagen full-bleed. Máximo impacto.",
+    "badge": "Nuevo",
+    "badgeColor": "rgba(255,59,92,.12)",
+    "badgeText": "#ff3b5c",
+    "preview": {
+      "bg": "linear-gradient(145deg,#0d0d1a,#1a0028)",
+      "accent": "#ff3b5c",
+      "style": "bold"
+    }
+  },
+  {
+    "id": "minimalista",
+    "file": "template_minimalista.html",
+    "name": "Minimalista",
+    "description": "Fondo blanco, tipografía DM Sans ultraligera, barra de progreso. Limpio y enfocado.",
+    "badge": "Nuevo",
+    "badgeColor": "rgba(0,0,0,.06)",
+    "badgeText": "#555",
+    "preview": {
+      "bg": "#fafafa",
+      "accent": "#111",
+      "style": "minimal"
+    }
+  }
+]

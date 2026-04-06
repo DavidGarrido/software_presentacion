@@ -852,6 +852,100 @@
             font-weight: 600;
             transition: all 0.15s;
         }
+
+        /* ── Modal Plantillas ── */
+        .tpl-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .tpl-card {
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .tpl-card:hover { border-color: var(--airbnb-red); transform: translateY(-2px); box-shadow: var(--shadow-2); }
+        .tpl-card.selected { border-color: var(--airbnb-red); box-shadow: 0 0 0 3px rgba(255,56,92,0.15); }
+        .tpl-preview {
+            height: 130px;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .tpl-info { padding: 12px; }
+        .tpl-info h4 { font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; color: var(--text-primary); }
+        .tpl-info p  { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; }
+        .tpl-badge {
+            display: inline-block;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: 999px;
+            margin-top: 6px;
+        }
+        .tpl-upload-row {
+            border-top: 1px solid var(--border-light);
+            padding-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .tpl-upload-row p { font-size: 0.82rem; color: var(--text-secondary); flex: 1; }
+
+        /* Preview visuales de cada template */
+        .prev-corp {
+            background: linear-gradient(145deg,#06060f,#0a0a2e);
+            display: flex; align-items: center; justify-content: flex-start;
+            padding: 16px 20px; gap: 12px;
+        }
+        .prev-corp-bar { width: 2px; height: 80px; background: linear-gradient(to bottom,transparent,#00d4ff,transparent); flex-shrink:0; }
+        .prev-corp-content { display:flex; flex-direction:column; gap:5px; }
+        .prev-corp-tag { font-size:0.5rem; letter-spacing:.2em; text-transform:uppercase; color:#00d4ff; }
+        .prev-corp-h1  { font-size:1.1rem; font-weight:900; color:#fff; line-height:1.1; }
+        .prev-corp-bul { display:flex; flex-direction:column; gap:3px; }
+        .prev-corp-bul span { font-size:0.55rem; color:rgba(255,255,255,.6); padding:2px 6px; background:rgba(255,255,255,.05); border-left:2px solid rgba(0,212,255,.4); border-radius:0 3px 3px 0; }
+
+        .prev-mod {
+            background: linear-gradient(135deg,#1a0040,#3d0080,#0a0020);
+            display: flex; align-items: center; justify-content: center;
+            padding: 12px;
+        }
+        .prev-mod-glass {
+            background: rgba(255,255,255,.13);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 12px;
+            padding: 12px 16px;
+            width: 100%;
+            display: flex; flex-direction: column; gap: 5px; align-items:center; text-align:center;
+        }
+        .prev-mod-tag { font-size:0.5rem; letter-spacing:.15em; text-transform:uppercase; color:rgba(255,255,255,.7); background:rgba(255,255,255,.15); border-radius:999px; padding:2px 8px; }
+        .prev-mod-h1  { font-size:1rem; font-weight:800; color:#fff; }
+        .prev-mod-bul { display:flex; flex-direction:column; gap:3px; width:100%; }
+        .prev-mod-bul span { font-size:0.55rem; color:rgba(255,255,255,.85); padding:3px 7px; background:rgba(255,255,255,.08); border-radius:6px; border:1px solid rgba(255,255,255,.1); }
+
+        .prev-eleg {
+            background: #f5f0eb;
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px 20px;
+        }
+        .prev-eleg-content { display:flex; flex-direction:column; gap:6px; width:100%; }
+        .prev-eleg-tag { font-size:0.48rem; letter-spacing:.25em; text-transform:uppercase; color:#8b6914; display:flex; align-items:center; gap:6px; }
+        .prev-eleg-tag::before,.prev-eleg-tag::after { content:''; flex:0 0 14px; height:1px; background:#8b6914; }
+        .prev-eleg-h1  { font-family:Georgia,serif; font-size:1.1rem; font-weight:700; color:#1a1612; line-height:1.15; }
+        .prev-eleg-div { display:flex; align-items:center; gap:6px; }
+        .prev-eleg-div-line { flex:1; height:1px; background:rgba(139,105,20,.4); }
+        .prev-eleg-div-dia  { width:5px; height:5px; background:#8b6914; transform:rotate(45deg); flex-shrink:0; }
+        .prev-eleg-bul { display:flex; flex-direction:column; gap:3px; }
+        .prev-eleg-bul span { font-size:0.55rem; color:rgba(26,22,18,.75); padding:2px 0 2px 8px; border-bottom:1px solid rgba(139,105,20,.12); display:flex; gap:5px; }
+        .prev-eleg-bul span::before { content:'—'; color:#8b6914; flex-shrink:0; }
         .btn-secondary:hover { background: var(--border-color); }
         .btn-danger {
             background: #FF385C;
@@ -1281,7 +1375,29 @@
         <div class="modal-footer">
             <button class="btn-secondary" onclick="exportarPresentacion()">⬇ Exportar JSON</button>
             <button class="btn-secondary" onclick="abrirModalIA()" style="background:linear-gradient(135deg,#6a11cb,#2575fc);color:white;">&#x2728; Generar con IA</button>
+            <button class="btn-secondary" onclick="loadTemplates().then(()=>openModal('modalPlantillas'))" style="background:linear-gradient(135deg,#0f4c75,#1b6ca8);color:white;">🎨 Plantilla</button>
             <button class="btn-primary" onclick="guardarPresentacion()">💾 Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: Selector de Plantillas
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalPlantillas">
+    <div class="modal" style="max-width:720px;">
+        <div class="modal-header">
+            <h2>🎨 Elige una plantilla</h2>
+            <button class="modal-close" onclick="closeModal('modalPlantillas')">✕</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:0.83rem;color:var(--text-secondary);margin-bottom:16px;">
+                La plantilla define el estilo visual. El contenido (slides, textos, notas) no cambia.
+            </p>
+            <div class="tpl-grid" id="tplGrid">
+                <!-- Se llena dinámicamente desde templates.json -->
+                <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-secondary);font-size:0.85rem;">Cargando plantillas…</div>
+            </div>
         </div>
     </div>
 </div>
@@ -1473,7 +1589,13 @@ function renderThumbs() {
                 // Entró al viewport → cargar si no está
                 if (!ifrm.dataset.loaded) {
                     ifrm.dataset.loaded = '1';
-                    ifrm.src = 'viewer.html';
+                    const thumbViewer = currentPres.viewer || 'viewer.html';
+                    if (currentPres.viewerHtml) {
+                        const blob = new Blob([currentPres.viewerHtml], { type:'text/html' });
+                        ifrm.src = URL.createObjectURL(blob);
+                    } else {
+                        ifrm.src = thumbViewer;
+                    }
                     ifrm.onload = () => {
                         try { ifrm.contentWindow.postMessage({ action:'load', slides:currentPres.slides, index:i }, '*'); } catch(e){}
                     };
@@ -1613,6 +1735,8 @@ async function eliminarPres(id) {
 let edSlides = [];
 let edSelectedIdx = -1;
 let edEditingId   = null;
+let edViewer      = null;   // plantilla activa en el editor
+let edViewerHtml  = null;   // plantilla personalizada (HTML inline)
 
 // ── Historial de cambios (hasta 20 pasos) ────────────────────────────────────
 const ED_MAX_HISTORY = 20;
@@ -1677,6 +1801,29 @@ function _edResetHistory() {
     _edUpdateHistoryUI();
 }
 
+function initEdPreviewFrame(pres) {
+    // Sincronizar variables del editor con la presentación
+    edViewer     = pres?.viewer     || null;
+    edViewerHtml = pres?.viewerHtml || null;
+    _reloadEdPreviewFrame();
+}
+
+function _reloadEdPreviewFrame() {
+    const iframe = document.getElementById('edPreviewFrame');
+    if (!iframe) return;
+    const onLoaded = () => { if (edSelectedIdx >= 0) updateEdPreview(); };
+    if (edViewerHtml) {
+        const blob = new Blob([edViewerHtml], { type:'text/html' });
+        const blobUrl = URL.createObjectURL(blob);
+        iframe.onload = () => { URL.revokeObjectURL(blobUrl); onLoaded(); };
+        iframe.src = blobUrl;
+    } else {
+        const viewer = edViewer || 'viewer.html';
+        iframe.onload = onLoaded;
+        iframe.src = viewer;
+    }
+}
+
 function openEditorNueva() {
     edEditingId   = null;
     edSlides      = [];
@@ -1686,6 +1833,7 @@ function openEditorNueva() {
     document.getElementById('edPresName').value = '';
     renderEdSlideList();
     edShowSlideForm(-1);
+    initEdPreviewFrame(currentPres);
     openModal('modalEditor');
 }
 
@@ -1702,6 +1850,7 @@ async function openEditorExistente(id, startIndex) {
     document.getElementById('edPresName').value = p.name;
     renderEdSlideList();
     edShowSlideForm(edSelectedIdx);
+    initEdPreviewFrame(p);
     closeModal('modalPresentaciones');
     openModal('modalEditor');
 }
@@ -1884,7 +2033,7 @@ function edShowSlideForm(idx) {
                 <div>
                     <div style="font-size:0.72rem;color:#aaa;margin-bottom:5px;">Vista previa</div>
                     <div class="ed-preview-wrap">
-                        <iframe id="edPreviewFrame" src="viewer.html"></iframe>
+                        <iframe id="edPreviewFrame" src=""></iframe>
                     </div>
                 </div>
 
@@ -1920,8 +2069,8 @@ function edShowSlideForm(idx) {
         </div>
     `;
 
-    // Cargar preview tras render del iframe
-    setTimeout(updateEdPreview, 250);
+    // Cargar preview con la plantilla correcta tras render del iframe
+    setTimeout(_reloadEdPreviewFrame, 0);
 }
 
 function edSetLayout(layout) {
@@ -1977,7 +2126,13 @@ function updateEdPreview() {
         layoutHidden: edSlides[edSelectedIdx]?.layoutHidden || false
     };
     try {
-        iframe.contentWindow.postMessage({ action:'load', slides:[slide], index:0 }, '*');
+        iframe.contentWindow.postMessage({
+            action: 'load',
+            slides: [slide],
+            index: 0,
+            accentColor: currentPres?.accentColor || null,
+            decorEmojis: currentPres?.decorEmojis || null
+        }, '*');
     } catch(e) {}
 }
 
@@ -2348,6 +2503,9 @@ async function guardarPresentacion() {
         updatedAt: new Date().toISOString()
     };
     if (!edEditingId) pres.createdAt = pres.updatedAt;
+    // Preservar plantilla seleccionada
+    if (edViewerHtml) pres.viewerHtml = edViewerHtml;
+    else if (edViewer && edViewer !== 'viewer.html') pres.viewer = edViewer;
     await dbPut('presentations', pres);
     closeModal('modalEditor');
     loadPresentacion(pres);
@@ -2357,7 +2515,10 @@ function exportarPresById(id) { dbGet('presentations', id).then(p => { if (p) de
 function exportarPresentacion() {
     edSaveCurrentForm();
     const name = document.getElementById('edPresName').value.trim() || 'presentacion';
-    descargarJSON({ id: edEditingId || uid(), name, slides: edSlides }, name);
+    const obj = { id: edEditingId || uid(), name, slides: edSlides };
+    if (edViewerHtml) obj.viewerHtml = edViewerHtml;
+    else if (edViewer && edViewer !== 'viewer.html') obj.viewer = edViewer;
+    descargarJSON(obj, name);
 }
 
 function descargarJSON(obj, name) {
@@ -2366,6 +2527,286 @@ function descargarJSON(obj, name) {
     a.download = name.replace(/[^a-z0-9]/gi,'_') + '.json';
     a.click();
 }
+
+// ── Plantillas ───────────────────────────────────────────────────────────────
+
+let availableTemplates = [];
+
+// Genera el HTML de preview miniatura según el estilo definido en templates.json
+function tplPreviewHTML(p) {
+    const a = p.preview?.accent || '#00d4ff';
+    const bg = p.preview?.bg || '#0d0d1a';
+    const style = p.preview?.style || 'classic';
+
+    if (style === 'classic') return `
+        <div style="background:${bg};height:100%;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+            <div style="width:2px;height:70px;background:linear-gradient(to bottom,transparent,${a},transparent);flex-shrink:0;"></div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <span style="font-size:.45rem;letter-spacing:.2em;text-transform:uppercase;color:${a};">CATEGORÍA</span>
+                <span style="font-size:1rem;font-weight:900;color:#fff;line-height:1.1;">Título<br>del Slide</span>
+                <div style="display:flex;flex-direction:column;gap:3px;margin-top:3px;">
+                    <span style="font-size:.5rem;color:rgba(255,255,255,.65);padding:2px 6px;background:rgba(255,255,255,.05);border-left:2px solid ${a}40;">Punto uno</span>
+                    <span style="font-size:.5rem;color:rgba(255,255,255,.65);padding:2px 6px;background:rgba(255,255,255,.05);border-left:2px solid ${a}40;">Punto dos</span>
+                </div>
+            </div>
+        </div>`;
+
+    if (style === 'corporate') return `
+        <div style="background:${bg};height:100%;padding:12px 14px;display:flex;align-items:center;gap:10px;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:0;left:0;width:36px;height:36px;border-left:2px solid ${a}40;border-top:2px solid ${a}40;"></div>
+            <div style="position:absolute;bottom:0;right:0;width:36px;height:36px;border-right:2px solid ${a}40;border-bottom:2px solid ${a}40;"></div>
+            <div style="width:2px;height:70px;background:linear-gradient(to bottom,transparent,${a},transparent);flex-shrink:0;"></div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <span style="font-size:.42rem;letter-spacing:.22em;text-transform:uppercase;color:${a};display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:1px;background:${a};"></span>CATEGORÍA</span>
+                <span style="font-size:1rem;font-weight:900;color:#fff;line-height:1.05;letter-spacing:-.02em;">Título<br>Profesional</span>
+                <div style="display:flex;flex-direction:column;gap:2px;margin-top:3px;">
+                    <span style="font-size:.48rem;color:rgba(255,255,255,.8);padding:2px 5px;background:rgba(255,255,255,.04);border-left:2px solid ${a}60;border-radius:0 3px 3px 0;">Punto uno</span>
+                    <span style="font-size:.48rem;color:rgba(255,255,255,.8);padding:2px 5px;background:rgba(255,255,255,.04);border-left:2px solid ${a}60;border-radius:0 3px 3px 0;">Punto dos</span>
+                </div>
+            </div>
+        </div>`;
+
+    if (style === 'modern') return `
+        <div style="background:${bg};height:100%;padding:10px;display:flex;align-items:center;justify-content:center;">
+            <div style="background:rgba(255,255,255,.13);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:10px 14px;width:100%;display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;">
+                <span style="font-size:.42rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.7);background:rgba(255,255,255,.15);border-radius:999px;padding:1px 7px;">CATEGORÍA</span>
+                <span style="font-size:.95rem;font-weight:800;color:#fff;line-height:1.1;">Título Moderno</span>
+                <div style="display:flex;flex-direction:column;gap:2px;width:100%;">
+                    <span style="font-size:.48rem;color:rgba(255,255,255,.9);padding:2px 6px;background:rgba(255,255,255,.08);border-radius:5px;border:1px solid rgba(255,255,255,.1);">◆ Punto uno</span>
+                    <span style="font-size:.48rem;color:rgba(255,255,255,.9);padding:2px 6px;background:rgba(255,255,255,.08);border-radius:5px;border:1px solid rgba(255,255,255,.1);">◆ Punto dos</span>
+                </div>
+            </div>
+        </div>`;
+
+    if (style === 'elegant') return `
+        <div style="background:${bg};height:100%;padding:12px 16px;display:flex;align-items:center;justify-content:center;">
+            <div style="display:flex;flex-direction:column;gap:5px;width:100%;">
+                <div style="display:flex;align-items:center;gap:5px;justify-content:center;">
+                    <div style="flex:1;height:1px;background:${a}55;"></div>
+                    <span style="font-size:.42rem;letter-spacing:.22em;text-transform:uppercase;color:${a};">CATEGORÍA</span>
+                    <div style="flex:1;height:1px;background:${a}55;"></div>
+                </div>
+                <span style="font-family:Georgia,serif;font-size:1rem;font-weight:700;color:#1a1612;line-height:1.15;text-align:center;">Título Elegante</span>
+                <div style="display:flex;align-items:center;gap:5px;">
+                    <div style="flex:1;height:1px;background:${a}44;"></div>
+                    <div style="width:4px;height:4px;background:${a};transform:rotate(45deg);flex-shrink:0;"></div>
+                    <div style="flex:1;height:1px;background:${a}44;"></div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                    <span style="font-size:.48rem;color:rgba(26,22,18,.75);padding:2px 0;border-bottom:1px solid ${a}22;display:flex;gap:5px;"><span style="color:${a};">—</span>Punto uno</span>
+                    <span style="font-size:.48rem;color:rgba(26,22,18,.75);padding:2px 0;border-bottom:1px solid ${a}22;display:flex;gap:5px;"><span style="color:${a};">—</span>Punto dos</span>
+                </div>
+            </div>
+        </div>`;
+
+    if (style === 'neon') return `
+        <div style="background:${bg};height:100%;padding:10px;position:relative;overflow:hidden;
+            background-image:linear-gradient(${a}08 1px,transparent 1px),linear-gradient(90deg,${a}08 1px,transparent 1px);
+            background-size:20px 20px;">
+            <div style="position:absolute;top:6px;left:6px;width:16px;height:16px;border-left:2px solid ${a};border-top:2px solid ${a};"></div>
+            <div style="position:absolute;bottom:6px;right:6px;width:16px;height:16px;border-right:2px solid ${a};border-bottom:2px solid ${a};"></div>
+            <div style="height:100%;display:flex;align-items:center;gap:8px;padding:8px;">
+                <div style="width:2px;height:60px;background:linear-gradient(to bottom,transparent,${a},transparent);flex-shrink:0;box-shadow:0 0 6px ${a};"></div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <span style="font-size:.4rem;letter-spacing:.25em;text-transform:uppercase;color:${a};text-shadow:0 0 6px ${a};">CATEGORÍA</span>
+                    <span style="font-size:.9rem;font-weight:900;color:#fff;line-height:1.05;letter-spacing:-.01em;">TÍTULO<br>NEÓN</span>
+                    <div style="display:flex;flex-direction:column;gap:2px;margin-top:2px;">
+                        <span style="font-size:.45rem;color:rgba(255,255,255,.8);padding:2px 5px;background:${a}0a;border-left:2px solid ${a};"><span style="color:${a};">▸</span> Punto uno</span>
+                        <span style="font-size:.45rem;color:rgba(255,255,255,.8);padding:2px 5px;background:${a}0a;border-left:2px solid ${a};"><span style="color:${a};">▸</span> Punto dos</span>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+    if (style === 'bold') return `
+        <div style="background:${bg};height:100%;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;">
+            <div style="position:absolute;right:-5px;bottom:-10px;font-size:5rem;font-weight:900;color:rgba(255,255,255,.04);line-height:1;pointer-events:none;">1</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
+                <div style="width:6px;height:6px;border-radius:50%;background:${a};flex-shrink:0;"></div>
+                <span style="font-size:.42rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.6);">CATEGORÍA</span>
+            </div>
+            <span style="font-size:1.1rem;font-weight:900;color:#fff;line-height:.95;letter-spacing:-.04em;text-transform:uppercase;">TÍTULO<br>BOLD</span>
+            <div style="display:flex;flex-direction:column;gap:2px;margin-top:6px;">
+                <span style="font-size:.48rem;font-weight:700;color:#fff;padding:3px 8px;background:rgba(255,255,255,.08);border-radius:3px;display:flex;align-items:center;gap:5px;"><span style="min-width:14px;height:14px;border-radius:50%;background:${a};font-size:.4rem;display:flex;align-items:center;justify-content:center;">1</span>Punto uno</span>
+                <span style="font-size:.48rem;font-weight:700;color:#fff;padding:3px 8px;background:rgba(255,255,255,.08);border-radius:3px;display:flex;align-items:center;gap:5px;"><span style="min-width:14px;height:14px;border-radius:50%;background:${a};font-size:.4rem;display:flex;align-items:center;justify-content:center;">2</span>Punto dos</span>
+            </div>
+        </div>`;
+
+    // minimal u otros
+    return `
+        <div style="background:${bg};height:100%;padding:14px 18px;display:flex;align-items:center;justify-content:center;">
+            <div style="display:flex;flex-direction:column;gap:6px;width:100%;align-items:center;text-align:center;">
+                <span style="font-size:.42rem;letter-spacing:.2em;text-transform:uppercase;color:${a};">CATEGORÍA</span>
+                <div style="width:30px;height:1px;background:${a};"></div>
+                <span style="font-size:1rem;font-weight:300;color:#222;line-height:1.2;">Título del Slide</span>
+            </div>
+        </div>`;
+}
+
+async function loadTemplates() {
+    try {
+        const res = await fetch('templates.json?_=' + Date.now());
+        availableTemplates = await res.json();
+    } catch(e) {
+        // Fallback si no se puede leer el JSON (file://)
+        availableTemplates = [
+            { id:'viewer',       file:'viewer.html',               name:'Clásico',     description:'Visor original.',         badge:'Por defecto', badgeColor:'rgba(0,212,255,.12)', badgeText:'#00d4ff', preview:{bg:'#06060f',accent:'#00d4ff',style:'classic'} },
+            { id:'corporativo',  file:'template_corporativo.html', name:'Corporativo', description:'Geométrico, profesional.', badge:'Nuevo',       badgeColor:'rgba(100,200,255,.1)',badgeText:'#64c8ff', preview:{bg:'linear-gradient(145deg,#06060f,#0a0a2e)',accent:'#00d4ff',style:'corporate'} },
+            { id:'moderno',      file:'template_moderno.html',     name:'Moderno',     description:'Glassmorphism.',           badge:'Nuevo',       badgeColor:'rgba(160,80,255,.12)',badgeText:'#c084fc', preview:{bg:'linear-gradient(135deg,#1a0040,#3d0080)',accent:'#a855f7',style:'modern'} },
+            { id:'elegante',     file:'template_elegante.html',    name:'Elegante',    description:'Serif, fondo claro.',      badge:'Nuevo',       badgeColor:'rgba(139,105,20,.1)', badgeText:'#8b6914', preview:{bg:'#f5f0eb',accent:'#8b6914',style:'elegant'} },
+            { id:'neon',         file:'template_neon.html',        name:'Neón',        description:'Rejilla tech, glow.',      badge:'Nuevo',       badgeColor:'rgba(0,255,245,.1)',  badgeText:'#00fff5', preview:{bg:'#000',accent:'#00fff5',style:'neon'} },
+            { id:'bold',         file:'template_bold.html',        name:'Bold',        description:'Tipografía gigante.',      badge:'Nuevo',       badgeColor:'rgba(255,59,92,.12)', badgeText:'#ff3b5c', preview:{bg:'linear-gradient(145deg,#0d0d1a,#1a0028)',accent:'#ff3b5c',style:'bold'} },
+        ];
+    }
+    renderTemplateGrid();
+}
+
+function renderTemplateGrid() {
+    const grid = document.getElementById('tplGrid');
+    if (!grid) return;
+
+    const activeFile = currentPres?.viewerHtml ? '__custom__' : (currentPres?.viewer || 'viewer.html');
+
+    const cards = availableTemplates.map(t => {
+        const isActive = t.file === activeFile;
+        return `
+            <div class="tpl-card${isActive ? ' selected' : ''}" id="tpl-${t.id}" onclick="selectTemplate('${t.file}','tpl-${t.id}')">
+                <div class="tpl-preview">${tplPreviewHTML(t)}</div>
+                <div class="tpl-info">
+                    <h4>${t.name}</h4>
+                    <p>${t.description}</p>
+                    <span class="tpl-badge" style="background:${t.badgeColor};color:${t.badgeText};">${t.badge}</span>
+                </div>
+            </div>`;
+    }).join('');
+
+    const uploadCard = `
+        <div class="tpl-card${activeFile === '__custom__' ? ' selected' : ''}" id="tpl-custom"
+             onclick="uploadPlantilla()"
+             style="justify-content:center;align-items:center;border-style:dashed;min-height:180px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px;text-align:center;">
+                <span style="font-size:2rem;">📁</span>
+                <div>
+                    <div style="font-size:.88rem;font-weight:700;color:var(--text-primary);margin-bottom:4px;">Mi plantilla</div>
+                    <div style="font-size:.75rem;color:var(--text-secondary);line-height:1.4;">Sube tu propio .html como visor personalizado</div>
+                </div>
+            </div>
+        </div>`;
+
+    const instructions = `
+        <div style="grid-column:1/-1;margin-top:8px;border-top:1px solid var(--border-light);padding-top:16px;">
+            <details style="cursor:pointer;">
+                <summary style="font-size:.82rem;font-weight:600;color:var(--text-primary);list-style:none;display:flex;align-items:center;gap:6px;user-select:none;">
+                    <span>📄</span> Cómo crear tu propia plantilla
+                    <span style="margin-left:auto;font-size:.72rem;color:var(--text-secondary);">Ver instrucciones</span>
+                </summary>
+                <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;">
+                    <p style="font-size:.78rem;color:var(--text-secondary);line-height:1.6;">
+                        Tu plantilla es un archivo <code style="background:var(--bg-tertiary);padding:1px 5px;border-radius:3px;font-size:.75rem;">.html</code>
+                        que recibe los slides por <strong>postMessage</strong> y los renderiza como quieras.
+                        Debe escuchar estos mensajes:
+                    </p>
+                    <pre style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:12px;font-size:.72rem;line-height:1.7;overflow-x:auto;color:var(--text-primary);"><code>window.addEventListener('message', e => {
+  const d = e.data;
+
+  // Cargar presentación completa
+  if (d.action === 'load') {
+    // d.slides    → array de slides
+    // d.index     → slide inicial
+    // d.accentColor → color hex del tema
+    // d.decorEmojis → array de emojis decorativos
+  }
+
+  if (d.action === 'goto') { /* ir al slide d.index */ }
+  if (d.action === 'next') { /* slide siguiente */ }
+  if (d.action === 'prev') { /* slide anterior */ }
+});</code></pre>
+                    <p style="font-size:.78rem;color:var(--text-secondary);line-height:1.6;">
+                        Cada objeto en <code style="background:var(--bg-tertiary);padding:1px 5px;border-radius:3px;font-size:.75rem;">d.slides</code> tiene:
+                    </p>
+                    <pre style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:12px;font-size:.72rem;line-height:1.7;overflow-x:auto;color:var(--text-primary);"><code>{
+  layout:  "cover" | "" | "highlight" | "image",
+  title:   "Título del slide",
+  content: "Línea 1\\nLínea 2\\nLínea 3",  // \\n = separador de bullets
+           // en layout image: URL de imagen
+           // ||palabra|| = palabra destacada con accentColor
+  tag:     "ETIQUETA EN MAYÚSCULAS",
+  bg:      "linear-gradient(145deg, #0d0d1a, #001f3f)",
+  notes:   "Guión para el presentador"
+}</code></pre>
+                    <p style="font-size:.78rem;color:var(--text-secondary);line-height:1.6;">
+                        Al cambiar de slide, notifica al presentador con:
+                    </p>
+                    <pre style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:12px;font-size:.72rem;line-height:1.7;overflow-x:auto;color:var(--text-primary);"><code>window.parent.postMessage({ action: 'slideChanged', index: N }, '*');</code></pre>
+                    <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5;">
+                        💡 Tip: copia cualquiera de los archivos <code style="background:var(--bg-tertiary);padding:1px 5px;border-radius:3px;">template_*.html</code>
+                        como punto de partida y personaliza el CSS.
+                    </p>
+                </div>
+            </details>
+        </div>`;
+
+    grid.innerHTML = cards + uploadCard + instructions;
+}
+
+function selectTemplate(viewerFile, cardId) {
+    document.querySelectorAll('#tplGrid .tpl-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById(cardId)?.classList.add('selected');
+
+    // Actualizar variables del editor
+    edViewer     = viewerFile;
+    edViewerHtml = null;
+
+    if (currentPres) {
+        currentPres.viewer = viewerFile;
+        delete currentPres.viewerHtml;
+        dbPut('presentations', currentPres);
+        // Recargar visor principal
+        const slideFrame = document.getElementById('slideFrame');
+        slideFrame.src = '';
+        setTimeout(() => {
+            slideFrame.onload = () => sendToViewers({ action:'load', slides: currentPres.slides, index: currentIndex ?? 0 });
+            slideFrame.src = viewerFile;
+        }, 50);
+        renderThumbs();
+    }
+    // Recargar preview del editor si está abierto
+    _reloadEdPreviewFrame();
+    closeModal('modalPlantillas');
+}
+
+function uploadPlantilla() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.html';
+    input.onchange = async (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const html = await file.text();
+        document.querySelectorAll('#tplGrid .tpl-card').forEach(c => c.classList.remove('selected'));
+        document.getElementById('tpl-custom')?.classList.add('selected');
+
+        // Actualizar variables del editor
+        edViewerHtml = html;
+        edViewer     = null;
+
+        if (currentPres) {
+            currentPres.viewerHtml = html;
+            delete currentPres.viewer;
+            dbPut('presentations', currentPres);
+            const slideFrame = document.getElementById('slideFrame');
+            const blob = new Blob([html], { type:'text/html' });
+            const blobUrl = URL.createObjectURL(blob);
+            slideFrame.onload = () => { URL.revokeObjectURL(blobUrl); sendToViewers({ action:'load', slides: currentPres.slides, index: currentIndex ?? 0 }); };
+            slideFrame.src = blobUrl;
+            renderThumbs();
+        }
+        // Recargar preview del editor si está abierto
+        _reloadEdPreviewFrame();
+        closeModal('modalPlantillas');
+    };
+    input.click();
+}
+
+// ── /Plantillas ───────────────────────────────────────────────────────────────
 
 function importarJSON() { document.getElementById('importInput').click(); }
 async function onImportJSON(e) {

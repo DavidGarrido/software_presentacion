@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Template Bold</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; font-family:'Inter',sans-serif; }
+:root { --accent:#ff3b5c; }
+
+#stage { width:100%; height:100%; position:relative; overflow:hidden; }
+
+.slide {
+    position:absolute; inset:0;
+    display:grid; grid-template-rows:1fr; align-items:center;
+    opacity:0;
+    transition:opacity .5s ease;
+    pointer-events:none;
+}
+.slide.active   { opacity:1; pointer-events:auto; }
+.slide.exit     { opacity:0; }
+
+.slide-bg { position:absolute; inset:0; z-index:0; }
+
+/* ── Número grande decorativo de fondo ── */
+.deco-num {
+    position:absolute; right:-2%; bottom:-8%;
+    font-family:'Syne',sans-serif; font-size:30vw; font-weight:800;
+    color:rgba(255,255,255,.04); line-height:1;
+    pointer-events:none; z-index:1; user-select:none;
+}
+
+.content {
+    position:relative; z-index:5;
+    padding:7% 10%;
+    display:flex; flex-direction:column; gap:1em;
+}
+
+.tag {
+    font-size:clamp(.5rem,.9vw,.72rem);
+    font-weight:700; letter-spacing:.22em; text-transform:uppercase;
+    color:rgba(255,255,255,.6);
+    display:flex; align-items:center; gap:10px;
+}
+.tag-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+
+h1 {
+    font-family:'Syne',sans-serif;
+    font-size:clamp(2.5rem,7.5vw,6rem);
+    font-weight:800; color:#fff;
+    line-height:.95; letter-spacing:-.04em;
+    text-transform:uppercase;
+}
+.acc { color:var(--accent); }
+
+.subtitle {
+    font-size:clamp(.9rem,2vw,1.4rem);
+    color:rgba(255,255,255,.55); font-weight:300; line-height:1.5;
+    max-width:600px;
+}
+
+/* Bullets como bloques grandes */
+.bullets { list-style:none; display:flex; flex-direction:column; gap:.5em; max-width:800px; }
+.bullets li {
+    font-size:clamp(.9rem,1.9vw,1.3rem); font-weight:700;
+    color:#fff; line-height:1.4;
+    padding:.7em 1.2em;
+    background:rgba(255,255,255,.08);
+    border-radius:4px;
+    display:flex; align-items:center; gap:1em;
+}
+.bullets li .num-pill {
+    min-width:28px; height:28px; border-radius:50%;
+    background:var(--accent); color:#fff;
+    font-size:.7rem; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+}
+
+/* Highlight: texto enorme */
+.hl-wrap {
+    display:flex; flex-direction:column; gap:.5em; align-items:flex-start;
+}
+.hl-text {
+    font-family:'Syne',sans-serif;
+    font-size:clamp(1.8rem,5.5vw,4.5rem);
+    font-weight:800; color:#fff; line-height:1.05;
+    letter-spacing:-.03em; text-transform:uppercase;
+}
+.hl-bar { width:80px; height:6px; background:var(--accent); border-radius:3px; margin-top:.3em; }
+
+/* Image: full bleed con título overlay */
+.img-full {
+    position:absolute; inset:0; z-index:1;
+}
+.img-full img { width:100%; height:100%; object-fit:cover; display:block; }
+.img-full::after {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.2) 60%, transparent 100%);
+}
+.img-overlay {
+    position:absolute; bottom:0; left:0; right:0;
+    padding:6% 10%; z-index:2;
+}
+.img-overlay .tag { margin-bottom:.5em; }
+.img-overlay h1 { font-size:clamp(1.8rem,5vw,4rem); }
+
+/* Cover: centrado */
+.cover-content {
+    align-items:center; text-align:center; justify-content:center;
+    min-height:100vh; display:flex; flex-direction:column; gap:1em;
+    padding:7% 10%;
+}
+.cover-content h1 { font-size:clamp(3rem,10vw,8rem); }
+.cover-line { width:100px; height:6px; background:var(--accent); border-radius:3px; }
+
+/* Num */
+.num {
+    position:fixed; bottom:20px; right:28px; z-index:100;
+    font-size:.68rem; font-weight:700; letter-spacing:.1em;
+    color:rgba(255,255,255,.25);
+}
+.num em { color:rgba(255,255,255,.6); font-style:normal; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="num"><em id="cNum">1</em> / <span id="cTotal">1</span></div>
+<div id="camWrap" style="display:none;position:fixed;z-index:50;cursor:move;user-select:none;overflow:hidden;">
+    <video id="camFeed" autoplay muted playsinline style="display:block;width:100%;height:100%;object-fit:cover;"></video>
+</div>
+<script>
+let slides=[], cur=0, busy=false;
+
+function setAccent(c){
+    if(!c)return;
+    document.documentElement.style.setProperty('--accent',c);
+}
+function mark(t){ return(t||'').replace(/\|\|(.+?)\|\|/g,'<span class="acc">$1</span>'); }
+
+function buildSlide(s,idx){
+    const lines=(s.content||'').split('\n').map(l=>l.trim()).filter(Boolean);
+    const bg=s.bg||'linear-gradient(145deg,#0d0d1a,#1a0028)';
+    const isFirst=idx===0, isLast=idx===slides.length-1;
+    const isCover=s.layout==='cover'||(isFirst&&!s.layout)||(isLast&&!s.layout);
+    const d=document.createElement('div');
+    d.className='slide'; d.dataset.index=idx;
+
+    if(s.layout==='image'&&lines[0]){
+        d.innerHTML=`
+            <div class="slide-bg" style="background:${bg};"></div>
+            <div class="img-full"><img src="${lines[0]}" alt="${s.title||''}"></div>
+            <div class="img-overlay">
+                <div class="tag"><span class="tag-dot"></span>${s.tag||''}</div>
+                <h1>${mark(s.title||'')}</h1>
+            </div>`;
+    } else if(isCover){
+        d.innerHTML=`
+            <div class="slide-bg" style="background:${bg};"></div>
+            <div class="deco-num">${idx+1}</div>
+            <div class="cover-content">
+                <div class="tag"><span class="tag-dot"></span>${s.tag||''}</div>
+                <h1>${mark(s.title||'')}</h1>
+                <div class="cover-line"></div>
+                ${lines[0]?`<p class="subtitle">${mark(lines.join(' · '))}</p>`:''}
+            </div>`;
+    } else if(s.layout==='highlight'){
+        d.innerHTML=`
+            <div class="slide-bg" style="background:${bg};"></div>
+            <div class="deco-num">${idx+1}</div>
+            <div class="content" style="align-items:flex-start;">
+                <div class="tag"><span class="tag-dot"></span>${s.tag||''}</div>
+                <div class="hl-wrap">
+                    <div class="hl-text">${mark(lines.join('<br>'))}</div>
+                    <div class="hl-bar"></div>
+                </div>
+                <p class="subtitle">${mark(s.title||'')}</p>
+            </div>`;
+    } else {
+        const bulletsHTML=lines.map((l,i)=>`<li><span class="num-pill">${i+1}</span>${mark(l)}</li>`).join('');
+        d.innerHTML=`
+            <div class="slide-bg" style="background:${bg};"></div>
+            <div class="deco-num">${idx+1}</div>
+            <div class="content">
+                <div class="tag"><span class="tag-dot"></span>${s.tag||''}</div>
+                <h1>${mark(s.title||'')}</h1>
+                <ul class="bullets">${bulletsHTML}</ul>
+            </div>`;
+    }
+
+    if(s.elements&&s.elements.length){
+        const ov=document.createElement('div');
+        ov.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6;';
+        s.elements.forEach((el,ei)=>{
+            const dv=document.createElement('div');
+            dv.style.cssText=`position:absolute;left:${el.x??0}%;top:${el.y??0}%;width:${el.w??20}%;height:${el.h??10}%;overflow:hidden;z-index:${ei+1};`;
+            if(el.type==='text'){Object.assign(dv.style,{fontFamily:"'Syne',sans-serif",color:el.color||'#fff',fontSize:(el.fontSize||2.5)+'vw',fontWeight:el.bold?'800':'400',textAlign:el.align||'left',lineHeight:'1.1',whiteSpace:'pre-wrap',textTransform:'uppercase'});dv.textContent=el.content||'';}
+            else if(el.type==='image'){const img=document.createElement('img');img.src=el.content||'';img.style.cssText=`width:100%;height:100%;object-fit:${el.fit||'contain'};`;dv.appendChild(img);}
+            ov.appendChild(dv);
+        });
+        d.appendChild(ov);
+    }
+    return d;
+}
+
+function load(data,startIdx=0){
+    slides=data.slides||[];
+    if(data.accentColor)setAccent(data.accentColor);
+    const stage=document.getElementById('stage');
+    stage.innerHTML='';
+    slides.forEach((s,i)=>stage.appendChild(buildSlide(s,i)));
+    document.getElementById('cTotal').textContent=slides.length;
+    show(startIdx,false);
+}
+
+function show(idx,animate=true){
+    if(!slides.length||busy)return;
+    idx=Math.max(0,Math.min(idx,slides.length-1));
+    const prev=document.querySelector('.slide.active');
+    const next=document.querySelectorAll('.slide')[idx];
+    if(!next||prev===next)return;
+    if(animate&&prev){busy=true;prev.classList.add('exit');setTimeout(()=>{prev.classList.remove('active','exit');busy=false;},500);}
+    else if(prev){prev.classList.remove('active','exit');}
+    next.classList.add('active');
+    cur=idx;
+    document.getElementById('cNum').textContent=idx+1;
+    try{window.parent.postMessage({action:'slideChanged',index:idx},'*');}catch(e){}
+}
+
+let camStream=null,camDrag=false,ox=0,oy=0;
+const camWrap=document.getElementById('camWrap'),camFeed=document.getElementById('camFeed');
+function camSz(size,shape){const w=Math.round(window.innerWidth*(parseInt(size)/100));return{w,h:shape==='circle'?w:Math.round(w*9/16)};}
+function camPos(pos,w,h){const pad=Math.round(window.innerWidth*.018),vw=window.innerWidth,vh=window.innerHeight;if(pos==='tl')return{x:pad,y:pad};if(pos==='tr')return{x:vw-w-pad,y:pad};if(pos==='bl')return{x:pad,y:vh-h-pad};if(pos==='center')return{x:(vw-w)/2,y:(vh-h)/2};if(pos==='full')return{x:0,y:0};return{x:vw-w-pad,y:vh-h-pad};}
+function applyCam(cfg){const isFull=cfg.pos==='full';const{w,h}=isFull?{w:window.innerWidth,h:window.innerHeight}:camSz(cfg.size,cfg.shape);const{x,y}=camPos(cfg.pos,w,h);const r=isFull?'0':cfg.shape==='circle'?'50%':Math.round(w*.06)+'px';camWrap.style.cssText=`position:fixed;z-index:50;cursor:move;user-select:none;width:${w}px;height:${h}px;left:${x}px;top:${y}px;border-radius:${r};overflow:hidden;border:${isFull?'none':'2px solid rgba(255,255,255,.55)'};box-shadow:${isFull?'none':'0 4px 24px rgba(0,0,0,.55)'};`;camFeed.style.cssText=`width:${w}px;height:${h}px;object-fit:cover;display:block;transform:scaleX(${cfg.mirror?-1:1});`;}
+async function startCam(cfg){if(!camStream){try{camStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});camFeed.srcObject=camStream;}catch(e){return;}}applyCam(cfg);camWrap.style.display='block';if(window.parent!==window.top)camWrap.style.display='none';}
+function stopCam(){camWrap.style.display='none';if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}camFeed.srcObject=null;}
+camWrap.addEventListener('pointerdown',e=>{camDrag=true;ox=e.clientX-camWrap.offsetLeft;oy=e.clientY-camWrap.offsetTop;camWrap.setPointerCapture(e.pointerId);});
+camWrap.addEventListener('pointermove',e=>{if(camDrag){camWrap.style.left=(e.clientX-ox)+'px';camWrap.style.top=(e.clientY-oy)+'px';}});
+camWrap.addEventListener('pointerup',()=>camDrag=false);
+
+window.addEventListener('message',e=>{
+    const d=e.data;if(!d)return;
+    if(d.action==='load'&&d.slides)load(d,d.index??0);
+    if(d.action==='goto')show(d.index);
+    if(d.action==='next')show(cur+1);
+    if(d.action==='prev')show(cur-1);
+    if(d.action==='camera'){if(d.enabled)startCam(d);else stopCam();}
+});
+document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' ')show(cur+1);
+    if(e.key==='ArrowLeft'||e.key==='ArrowUp')show(cur-1);
+});
+</script>
+</body>
+</html>
