@@ -797,6 +797,50 @@
             padding: 4px 8px;
             border-radius: var(--radius-full);
         }
+
+        /* ── Tarjeta de Apoyo ── */
+        .support-card {
+            margin-top: auto;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(255, 56, 92, 0.05), rgba(255, 56, 92, 0.15));
+            border: 1px solid rgba(255, 56, 92, 0.2);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+        .support-card h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--airbnb-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .support-card p {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        .support-btn {
+            background: var(--airbnb-red);
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: var(--radius-md);
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .support-btn:hover {
+            background: var(--airbnb-red-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-2);
+        }
         .btn-secondary {
             background: var(--bg-tertiary);
             color: var(--text-primary);
@@ -1187,6 +1231,16 @@
                 <button class="btn-secondary" onclick="importarJSON()">⬆ Importar JSON</button>
             </div>
             <div class="pres-list" id="presList"></div>
+            
+            <div class="support-card" style="margin-top:20px;">
+                <h4><span>❤️</span> Apoya el desarrollo</h4>
+                <p>¿Te gusta esta herramienta? Tu aporte me ayuda a seguir mejorándola con nuevas funciones.</p>
+                <img src="qrnequi.jpg" alt="QR Nequi" style="width:140px;height:140px;object-fit:contain;border-radius:8px;margin:0 auto;display:block;border:2px solid rgba(255,56,92,0.2);">
+                <p style="font-size:0.72rem;color:var(--text-secondary);margin-top:-4px;">📱 Escanea para donar por Nequi</p>
+                <a href="https://checkout.wompi.co/l/VPOS_RBA4s3" target="_blank" class="support-btn" style="display:block;text-align:center;">
+                    💳 Pagar con tarjeta u otros medios
+                </a>
+            </div>
         </div>
     </div>
 </div>
