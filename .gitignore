@@ -35,3 +35,12 @@ PRESENTACION_INGLES.html
 slides_belen.json
 slides_censo.json
 slides_ingles.json
+
+# Archivos Markdown y temporales (no necesarios en Pages)
+DATOS_CENSO_2018.md
+GUION_INGLES.md
+GUION_VIDEO_CENSO.md
+INSTRUCTIVO_IA.md
+NUEVA_PRESENTACION.md
+PRESENTACION_PERSONALIZADA.md
+grabaciones
