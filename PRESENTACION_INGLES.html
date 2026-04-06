@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Villa de Leyva - English Presentation</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Segoe UI',Arial,sans-serif; background:#1a1a0e; color:white; min-height:100vh; overflow:hidden; }
+        .slide-container { position:relative; width:100%; height:100vh; }
+        .slide { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:50px; opacity:0; visibility:hidden; transition:opacity 0.5s ease, transform 0.5s ease; transform:translateX(30px); }
+        .slide.active { opacity:1; visibility:visible; transform:translateX(0); }
+
+        /* Colores cálidos para Villa de Leyva */
+        .gold   { color:#f0c040; }
+        .cream  { color:#f5e6c8; }
+        .terra  { color:#c8733a; }
+        .sky    { color:#7ec8e3; }
+        .green  { color:#6db56d; }
+
+        h1 { font-size:3.2rem; margin-bottom:15px; text-align:center; color:#f0c040; text-shadow:0 2px 20px rgba(240,192,64,0.4); }
+        h2 { font-size:2rem; margin-bottom:25px; color:#c8733a; }
+        h3 { font-size:1.5rem; margin-bottom:15px; color:#f0c040; }
+        p  { font-size:1.3rem; line-height:1.9; margin-bottom:12px; color:#f5e6c8; }
+        li { font-size:1.25rem; line-height:1.9; color:#f5e6c8; }
+
+        /* Slide 1: Portada */
+        .cover { background: linear-gradient(160deg, #1a1005 0%, #3d2b0a 50%, #1a1005 100%); }
+        .cover h1 { font-size:3.8rem; }
+        .divider { width:120px; height:3px; background:linear-gradient(90deg,#c8733a,#f0c040); margin:20px auto; border-radius:2px; }
+        .tag { display:inline-block; background:rgba(240,192,64,0.15); border:1px solid rgba(240,192,64,0.4); border-radius:20px; padding:6px 18px; font-size:1rem; color:#f0c040; margin:4px; }
+
+        /* Cajas */
+        .box { background:rgba(255,255,255,0.07); border-radius:16px; padding:25px 30px; margin:15px; backdrop-filter:blur(6px); border:1px solid rgba(240,192,64,0.2); }
+        .two-col { display:grid; grid-template-columns:1fr 1fr; gap:30px; width:100%; max-width:1100px; }
+        .three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; width:100%; max-width:1100px; }
+
+        /* Listas */
+        ul { list-style:none; }
+        ul li { padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); }
+        ul li::before { content:"◆"; color:#c8733a; margin-right:12px; }
+
+        /* Adjetivos */
+        .adj-grid { display:flex; flex-wrap:wrap; justify-content:center; gap:12px; max-width:900px; margin:20px 0; }
+        .adj { background:rgba(200,115,58,0.2); border:1px solid #c8733a; border-radius:30px; padding:10px 22px; font-size:1.15rem; font-weight:bold; color:#f5e6c8; }
+
+        /* Elementos */
+        .element-card { background:rgba(255,255,255,0.07); border-radius:14px; padding:20px; border:1px solid rgba(240,192,64,0.2); text-align:center; }
+        .element-icon { font-size:2.5rem; margin-bottom:8px; }
+        .element-name { font-size:1rem; color:#f0c040; font-weight:bold; }
+
+        /* Highlight */
+        .hl { color:#f0c040; font-weight:bold; }
+
+        /* Slide counter */
+        .slide-counter { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); font-size:0.9rem; color:rgba(255,255,255,0.4); z-index:100; }
+    </style>
+</head>
+<body>
+<div class="slide-container">
+
+<!-- SLIDE 1: COVER -->
+<div class="slide cover active">
+    <h1>Villa de Leyva</h1>
+    <h2>A Colonial Treasure of Colombia</h2>
+    <div class="divider"></div>
+    <div style="margin-top:30px;text-align:center;line-height:2.2;">
+        <p><span class="tag">Student:</span> <span class="gold"> David Alexander Garrido Hernandez</span></p>
+        <p><span class="tag">Course:</span> Analysis and Software Development — SENA</p>
+        <p><span class="tag">Instructor:</span> Nelson Londoño Vergara</p>
+        <p><span class="tag">Activity:</span> GA2-240202501-AA2-EV02</p>
+    </div>
+</div>
+
+<!-- SLIDE 2: WHERE IT IS -->
+<div class="slide" style="background:linear-gradient(160deg,#0a1a10,#1a2e1a);">
+    <h1>Where is Villa de Leyva?</h1>
+    <div class="two-col">
+        <div class="box">
+            <h3>Location</h3>
+            <ul>
+                <li><span class="hl">Country:</span> Colombia</li>
+                <li><span class="hl">Department:</span> Boyacá</li>
+                <li><span class="hl">Distance from Bogotá:</span> ~157 km</li>
+                <li><span class="hl">Distance from Tunja:</span> ~40 km</li>
+                <li><span class="hl">Altitude:</span> 2,149 m above sea level</li>
+                <li><span class="hl">Founded:</span> June 12, 1572</li>
+            </ul>
+        </div>
+        <div class="box">
+            <h3>How to get there</h3>
+            <ul>
+                <li>By bus from Bogotá (~3.5 hours)</li>
+                <li>By car via Highway 55</li>
+                <li>Nearest city: Tunja (45 min)</li>
+            </ul>
+            <br>
+            <p style="font-size:1rem;color:#aaa;">Declared a <span class="gold">National Monument</span> in 1954 — its colonial architecture has been perfectly preserved.</p>
+        </div>
+    </div>
+</div>
+
+<!-- SLIDE 3: WHAT IT IS LIKE -->
+<div class="slide" style="background:linear-gradient(160deg,#1a0e05,#2e1a05);">
+    <h1>What is Villa de Leyva Like?</h1>
+    <div class="adj-grid">
+        <div class="adj">Historic</div>
+        <div class="adj">Peaceful</div>
+        <div class="adj">Beautiful</div>
+        <div class="adj">Smaller than Bogotá</div>
+        <div class="adj">Older than Cartagena</div>
+        <div class="adj">Whiter than most towns</div>
+        <div class="adj">Colder than the coast</div>
+        <div class="adj">More charming than a city</div>
+        <div class="adj">Drier than the Amazon</div>
+    </div>
+    <div class="box" style="max-width:800px;margin-top:10px;">
+        <p style="text-align:center;">Villa de Leyva is <span class="hl">older, smaller and quieter</span> than most Colombian cities. Its streets are <span class="hl">whiter and wider</span> than typical colonial towns. The weather is <span class="hl">cooler and drier</span> than Bogotá.</p>
+    </div>
+</div>
+
+<!-- SLIDE 4: ELEMENTS -->
+<div class="slide" style="background:linear-gradient(160deg,#0a0a1a,#1a1a2e);">
+    <h1>What Elements are There?</h1>
+    <div class="three-col">
+        <div class="element-card">
+            <div class="element-icon">🏛️</div>
+            <div class="element-name">Plaza Mayor</div>
+            <p style="font-size:0.9rem;color:#aaa;margin-top:6px;">One of the largest cobblestone squares in South America</p>
+        </div>
+        <div class="element-card">
+            <div class="element-icon">⛪</div>
+            <div class="element-name">Colonial Churches</div>
+            <p style="font-size:0.9rem;color:#aaa;margin-top:6px;">Nuestra Señora del Rosario, Santo Ecce Homo Convent</p>
+        </div>
+        <div class="element-card">
+            <div class="element-icon">🦕</div>
+            <div class="element-name">El Fósil Museum</div>
+            <p style="font-size:0.9rem;color:#aaa;margin-top:6px;">Kronosaurus fossil, 110 million years old</p>
+        </div>
+        <div class="element-card">
+            <div class="element-icon">🌊</div>
+            <div class="element-name">Pozo Azul</div>
+            <p style="font-size:0.9rem;color:#aaa;margin-top:6px;">A beautiful natural turquoise water pool</p>
+        </div>
+        <div class="element-card">
+            <div class="element-icon">🗿</div>
+            <div class="element-name">El Infiernito</div>
+            <p style="font-size:0.9rem;color:#aaa;margin-top:6px;">Pre-Columbian stone observatory</p>
+        </div>
+        <div class="element-card">
+            <div class="element-icon">🛖</div>
+            <div class="element-name">White Houses</div>
+            <p style="font-size:0.9rem;color:#aaa;margin-top:6px;">Traditional colonial whitewashed architecture</p>
+        </div>
+    </div>
+</div>
+
+<!-- SLIDE 5: PLAZA MAYOR -->
+<div class="slide" style="background:linear-gradient(160deg,#1a0a00,#2e1800);">
+    <h1>Plaza Mayor — The Heart of Villa de Leyva</h1>
+    <div class="two-col">
+        <div class="box">
+            <h3>Description</h3>
+            <ul>
+                <li>Size: <span class="hl">14,000 m²</span> — one of the largest in South America</li>
+                <li>Entirely paved with <span class="hl">large cobblestones</span></li>
+                <li>Surrounded by <span class="hl">white colonial buildings</span></li>
+                <li>Central fountain built in <span class="hl">1617</span></li>
+                <li>Faces the <span class="hl">Parish Church</span> (1608)</li>
+            </ul>
+        </div>
+        <div class="box">
+            <h3>Why It Is Popular</h3>
+            <ul>
+                <li>It is a <span class="hl">symbol of Colombian heritage</span></li>
+                <li>Host of the <span class="hl">Star and Kite Festival</span></li>
+                <li>Surrounded by restaurants and craft shops</li>
+                <li>Perfect spot to enjoy the <span class="hl">sunset</span></li>
+                <li>Featured in many <span class="hl">films and TV series</span></li>
+            </ul>
+        </div>
+    </div>
+    <p style="margin-top:15px;font-size:1.1rem;color:#aaa;text-align:center;">
+        "The Plaza Mayor is not just a square — it is a <span class="gold">living museum</span> where time seems to stop."
+    </p>
+</div>
+
+</div>
+
+<div class="slide-counter"><span id="currentSlideNum">1</span> / <span id="totalSlidesNum">5</span></div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const total  = slides.length;
+    document.getElementById('totalSlidesNum').textContent = total;
+    let transitioning = false;
+
+    function showSlide(n) {
+        if (n < 0 || n >= total || transitioning) return;
+        transitioning = true;
+        slides[currentSlide].classList.remove('active');
+        currentSlide = n;
+        slides[currentSlide].classList.add('active');
+        document.getElementById('currentSlideNum').textContent = currentSlide + 1;
+        setTimeout(() => { transitioning = false; }, 500);
+    }
+    function nextSlide() { showSlide(currentSlide + 1); }
+    function prevSlide() { showSlide(currentSlide - 1); }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+        if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevSlide();
+    });
+</script>
+</body>
+</html>

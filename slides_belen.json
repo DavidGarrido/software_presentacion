@@ -1,0 +1,54 @@
+{
+  "name": "Testimonio Belén",
+  "viewer": "PRESENTACION_BELEN.html",
+  "slides": [
+    {
+      "layout": "cover",
+      "bg": "linear-gradient(145deg,#ff6ba8,#ff1493,#c71585)",
+      "tag": "Ministerio Infantil · Iglesia",
+      "title": "✨ Mi Testimonio ✨",
+      "content": "Belén · 8 años",
+      "notes": "Hola, me llamo Belén y tengo 8 años.\n\nHoy quiero compartir con la iglesia mi testimonio: cómo me he acercado a las cosas de Dios y lo que Él ha hecho en mi vida."
+    },
+    {
+      "layout": "highlight",
+      "bg": "linear-gradient(145deg,#ffe4ec,#ffc0d9)",
+      "tag": "Mi historia",
+      "title": "✨ Cómo conocí a Dios",
+      "content": "En el Ministerio Infantil aprendí sobre el amor de Dios",
+      "notes": "[BELÉN cuenta cómo se acercó a Dios]\n\nPregunta guía: ¿Cómo fue que empezaste a conocer a Dios? ¿Cuándo sentiste que Él estaba en tu vida?\n\nEjemplo: \"Yo vine al ministerio infantil y ahí aprendí que Dios me ama mucho y que quiere estar en mi corazón...\""
+    },
+    {
+      "layout": "highlight",
+      "bg": "linear-gradient(145deg,#fff0f5,#ffb6d9)",
+      "tag": "La Palabra",
+      "title": "📖 Lo que he aprendido",
+      "content": "La Biblia me enseña que Dios me ama y que puedo confiar en Él",
+      "notes": "[BELÉN comparte qué ha aprendido de la Biblia]\n\nPregunta guía: ¿Qué has aprendido de la Palabra de Dios? ¿Qué versículo o historia te ha gustado?\n\nEjemplo: \"He aprendido que la Biblia es la Palabra de Dios y que en ella Él nos enseña cómo vivir y cuánto nos ama...\""
+    },
+    {
+      "layout": "highlight",
+      "bg": "linear-gradient(145deg,#ffe8f0,#ffd6ea)",
+      "tag": "Mi experiencia",
+      "title": "🙏 Mi oración",
+      "content": "Oré y sentí a Dios en mi corazón",
+      "notes": "[BELÉN cuenta sobre su oración]\n\nPregunta guía: ¿Sientes que acercarte a Dios te ha ayudado? ¿En qué?\n\nEjemplo: \"Sí me ha servido porque ahora sé que no estoy sola, que Dios siempre está conmigo...\"\n\n(Puede contar cómo se sintió cuando oró por primera vez)"
+    },
+    {
+      "layout": "highlight",
+      "bg": "linear-gradient(145deg,#fff5f8,#ffcce0)",
+      "tag": "Para la iglesia",
+      "title": "💒 Mi mensaje para la iglesia",
+      "content": "Quiero compartirles lo que Dios ha hecho en mi vida",
+      "notes": "[BELÉN da un mensaje para compartir con la iglesia]\n\nPregunta guía: ¿Qué les quieres decir a los niños y a la iglesia?\n\nEjemplo: \"Quiero decirles que Dios también quiere estar en el corazón de ustedes, que se acerquen a Él porque Él nos ama mucho...\""
+    },
+    {
+      "layout": "cover",
+      "bg": "linear-gradient(145deg,#ffe0ec,#ffadd6)",
+      "tag": "Gloria a Dios",
+      "title": "⭐ ¡Doy gloria a Dios!",
+      "content": "Porque Él cambió mi vida 💝",
+      "notes": "[CIERRE — dar toda la gloria a Dios]\n\nBelén: \"Le doy toda la gloria y la honra a Dios, porque solo Él sabe el corazón de cada uno y lo que puede hacer en nuestras vidas. Gracias.\"\n\n[Si Belén desea, puede cerrar con una oración corta]"
+    }
+  ]
+}

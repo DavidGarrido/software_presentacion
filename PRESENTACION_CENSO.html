@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Censo DANE 2018 - Colombia</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; min-height: 100vh; overflow: hidden; }
+        .slide-container { position: relative; width: 100%; height: 100vh; }
+        .slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; opacity: 0; visibility: hidden; transition: opacity 0.5s ease, transform 0.5s ease; transform: translateX(30px); }
+        .slide.active { opacity: 1; visibility: visible; transform: translateX(0); }
+        .slide.prev { transform: translateX(-30px); }
+        h1 { font-size: 3.5rem; margin-bottom: 20px; text-align: center; color: #00d4ff; }
+        h2 { font-size: 2.5rem; margin-bottom: 30px; color: #ffd700; }
+        h3 { font-size: 1.8rem; margin-bottom: 20px; color: #00d4ff; }
+        p, li { font-size: 1.4rem; line-height: 1.8; margin-bottom: 15px; }
+        .title-slide { background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); }
+        .title-slide h1 { font-size: 4rem; text-shadow: 0 0 30px rgba(0,212,255,0.5); }
+        .subtitle { font-size: 1.8rem; color: #aaa; margin-top: 20px; }
+        .data-box { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 30px; margin: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+        .big-number { font-size: 5rem; font-weight: bold; color: #00d4ff; text-shadow: 0 0 30px rgba(0,212,255,0.5); }
+        table { width: 100%; max-width: 900px; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 15px; text-align: center; font-size: 1.2rem; border-radius: 10px; }
+        th { background: #0f3460; color: #ffd700; }
+        td { background: rgba(255,255,255,0.1); }
+        .blue { color: #4a90d9; } .red { color: #e74c3c; } .green { color: #2ecc71; } .yellow { color: #ffd700; }
+        .chart-container { display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin: 20px 0; }
+        .progress-bar { width: 100%; height: 40px; background: rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden; margin: 10px 0; }
+        .progress { height: 100%; border-radius: 20px; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-weight: bold; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; max-width: 1200px; }
+        ul { list-style: none; }
+        ul li { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        ul li::before { content: "►"; color: #00d4ff; margin-right: 15px; }
+        .highlight { background: linear-gradient(90deg, #00d4ff, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
+        .credits { text-align: center; font-size: 1.2rem; color: #aaa; }
+        .credits strong { color: #00d4ff; }
+        .nav-buttons { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; z-index: 100; }
+        .nav-btn { padding: 15px 30px; background: #00d4ff; color: #1a1a2e; border: none; border-radius: 10px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: all 0.3s ease; }
+        .nav-btn:hover { transform: scale(1.1); }
+        .slide-counter { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); font-size: 1rem; color: rgba(255,255,255,0.5); z-index: 100; }
+    </style>
+</head>
+<body>
+<div class="slide-container">
+
+<!-- SLIDE 1: PORTADA -->
+<div class="slide active title-slide">
+    <h1>CENSO NACIONAL DE POBLACIÓN Y VIVIENDA</h1>
+    <h2>Colombia CNPV 2018</h2>
+    <p class="subtitle">DANE - Departamento Administrativo Nacional de Estadística</p>
+    <div style="margin-top: 40px;">
+        <p>Presentado por: <span class="highlight">David Alexander Garrido Hernandez</span></p>
+        <p>Programa: Análisis y Desarrollo de Software - SENA</p>
+    </div>
+</div>
+
+<!-- SLIDE 2: OBJETIVOS -->
+<div class="slide">
+    <h1>Objetivos de la Presentación</h1>
+    <div class="data-box" style="max-width: 800px;">
+        <ul>
+            <li>Presentar los datos más relevantes del censo 2018</li>
+            <li>Analizar las tres categorías principales del censo</li>
+            <li>Determinar las variables medidas en el instrumento</li>
+            <li>Explicar las variables demográficas derivadas</li>
+            <li>Sacar conclusiones para la planeación del país</li>
+        </ul>
+    </div>
+</div>
+
+<!-- SLIDE 3: INSTRUMENTO -->
+<div class="slide">
+    <h1>Instrumento de Recolección de Datos</h1>
+    <div class="two-column">
+        <div class="data-box">
+            <h3>Variables Medidas</h3>
+            <ul>
+                <li><strong>Demográficas:</strong> Sexo, edad, etnia</li>
+                <li><strong>Educativas:</strong> Nivel de escolaridad</li>
+                <li><strong>Económicas:</strong> Actividad laboral</li>
+                <li><strong>Migratorias:</strong> Lugar de nacimiento</li>
+                <li><strong>De vivienda:</strong> Servicios públicos</li>
+            </ul>
+        </div>
+        <div class="data-box">
+            <h3>Metodología</h3>
+            <ul>
+                <li>Enumeración de hecho</li>
+                <li>Visita directa a viviendas</li>
+                <li>Año de referencia: 2018</li>
+                <li>Cobertura: Todo el territorio nacional</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- SLIDE 4: POBLACIÓN TOTAL -->
+<div class="slide">
+    <h1>¿CUÁNTOS SOMOS?</h1>
+    <div class="data-box">
+        <p>Población Total de Colombia</p>
+        <div class="big-number">48.258.494</div>
+        <p style="color: #aaa;">habitantes</p>
+    </div>
+</div>
+
+<!-- SLIDE 5: DISTRIBUCIÓN POR SEXO -->
+<div class="slide">
+    <h1>Distribución por Sexo</h1>
+    <div class="chart-container">
+        <div class="data-box" style="text-align: center;">
+            <div style="font-size: 4rem;">♂</div>
+            <div class="big-number blue">23.550.145</div>
+            <p>Hombres (48,8%)</p>
+        </div>
+        <div class="data-box" style="text-align: center;">
+            <div style="font-size: 4rem;">♀</div>
+            <div class="big-number red">24.708.349</div>
+            <p>Mujeres (51,2%)</p>
+        </div>
+    </div>
+</div>
+
+<!-- SLIDE 6: GRUPOS ETARIOS -->
+<div class="slide">
+    <h1>Distribución por Edad</h1>
+    <div class="data-box" style="width: 100%; max-width: 900px;">
+        <div class="progress-bar">
+            <div class="progress" style="width: 22.6%; background: linear-gradient(90deg, #4a90d9, #00d4ff);">22,6% - Niños (0-14)</div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress" style="width: 68.3%; background: linear-gradient(90deg, #2ecc71, #27ae60);">68,3% - Adultos (15-64)</div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress" style="width: 9.1%; background: linear-gradient(90deg, #ffd700, #f39c12);">9,1% - Adultos mayores (65+)</div>
+        </div>
+    </div>
+    <p style="margin-top: 30px;">Tasa de Fecundidad: <span class="highlight">1,9 hijos por mujer</span></p>
+</div>
+
+<!-- SLIDE 7: NIVEL EDUCATIVO -->
+<div class="slide">
+    <h1>Nivel Educativo</h1>
+    <table>
+        <tr><th>Nivel</th><th>Porcentaje</th><th>Barra</th></tr>
+        <tr><td>Sin educación</td><td>2,3%</td><td><div class="progress-bar" style="width:150px;"><div class="progress" style="width:23%;background:#e74c3c;"></div></div></td></tr>
+        <tr><td>Primaria</td><td>27,4%</td><td><div class="progress-bar" style="width:150px;"><div class="progress" style="width:74%;background:#f39c12;"></div></div></td></tr>
+        <tr><td>Secundaria</td><td>24,8%</td><td><div class="progress-bar" style="width:150px;"><div class="progress" style="width:68%;background:#ffd700;"></div></div></td></tr>
+        <tr><td>Media</td><td>16,5%</td><td><div class="progress-bar" style="width:150px;"><div class="progress" style="width:50%;background:#2ecc71;"></div></div></td></tr>
+        <tr><td>Superior</td><td>13,4%</td><td><div class="progress-bar" style="width:150px;"><div class="progress" style="width:40%;background:#00d4ff;"></div></div></td></tr>
+    </table>
+</div>
+
+<!-- SLIDE 8: DÓNDE ESTAMOS -->
+<div class="slide">
+    <h1>¿DÓNDE ESTAMOS?</h1>
+    <div class="chart-container">
+        <div class="data-box" style="text-align: center;">
+            <div class="big-number green">77,1%</div>
+            <p>ZONA URBANA</p>
+            <p style="color: #aaa;">37,2 millones</p>
+        </div>
+        <div class="data-box" style="text-align: center;">
+            <div class="big-number yellow">22,9%</div>
+            <p>ZONA RURAL</p>
+            <p style="color: #aaa;">11,1 millones</p>
+        </div>
+    </div>
+</div>
+
+<!-- SLIDE 9: TOP DEPARTAMENTOS -->
+<div class="slide">
+    <h1>Top 5 Departamentos</h1>
+    <table>
+        <tr><th>#</th><th>Departamento</th><th>Población</th></tr>
+        <tr><td>1</td><td>Bogotá D.C.</td><td class="highlight">7.412.566</td></tr>
+        <tr><td>2</td><td>Antioquia</td><td>6.456.909</td></tr>
+        <tr><td>3</td><td>Valle del Cauca</td><td>4.532.152</td></tr>
+        <tr><td>4</td><td>Cundinamarca</td><td>3.242.999</td></tr>
+        <tr><td>5</td><td>Atlántico</td><td>2.535.517</td></tr>
+    </table>
+    <p style="margin-top: 20px;">Total hogares: <span class="highlight">14,1 millones</span> | Viviendas: <span class="highlight">14,5 millones</span></p>
+</div>
+
+<!-- SLIDE 10: SERVICIOS -->
+<div class="slide">
+    <h1>¿CÓMO VIVIMOS?</h1>
+    <h3>Acceso a Servicios Públicos</h3>
+    <div class="data-box" style="width: 100%; max-width: 800px;">
+        <div class="progress-bar"><div class="progress" style="width:98.6%;background:#2ecc71;">Electricidad: 98,6%</div></div>
+        <div class="progress-bar"><div class="progress" style="width:87.4%;background:#3498db;">Agua: 87,4%</div></div>
+        <div class="progress-bar"><div class="progress" style="width:81.2%;background:#9b59b6;">Alcantarillado: 81,2%</div></div>
+        <div class="progress-bar"><div class="progress" style="width:63.8%;background:#f39c12;">Gas natural: 63,8%</div></div>
+        <div class="progress-bar"><div class="progress" style="width:47.1%;background:#e74c3c;">Internet: 47,1% ⚠</div></div>
+    </div>
+</div>
+
+<!-- SLIDE 11: TIPOS DE HOGAR -->
+<div class="slide">
+    <h1>Tipos de Hogar</h1>
+    <div class="chart-container">
+        <div class="data-box"><p class="green" style="font-size:2rem;font-weight:bold;">49,2%</p><p>Nuclear (con hijos)</p></div>
+        <div class="data-box"><p class="yellow" style="font-size:2rem;font-weight:bold;">17,5%</p><p>Extendido</p></div>
+        <div class="data-box"><p class="blue" style="font-size:2rem;font-weight:bold;">15,8%</p><p>Unipersonal</p></div>
+        <div class="data-box"><p style="font-size:2rem;font-weight:bold;">14,3%</p><p>Nuclear (sin hijos)</p></div>
+    </div>
+</div>
+
+<!-- SLIDE 12: JEFATURA -->
+<div class="slide">
+    <h1>Jefatura de Hogar</h1>
+    <div class="chart-container">
+        <div class="data-box" style="text-align:center;">
+            <div style="font-size:4rem;">👨</div>
+            <div class="big-number blue">50,6%</div>
+            <p>Hombre</p>
+        </div>
+        <div class="data-box" style="text-align:center;">
+            <div style="font-size:4rem;">👩</div>
+            <div class="big-number red">49,4%</div>
+            <p>Mujer</p>
+        </div>
+    </div>
+    <p style="color:#aaa;margin-top:20px;">Incremento significativo de la jefatura femenina</p>
+</div>
+
+<!-- SLIDE 13: ANÁLISIS DEMOGRÁFICO -->
+<div class="slide">
+    <h1>Análisis de Variables Demográficas</h1>
+    <div class="two-column">
+        <div class="data-box">
+            <h3>Indicadores Clave</h3>
+            <ul>
+                <li><span class="highlight">Índice de envejecimiento:</span> 40,3</li>
+                <li><span class="highlight">Tasa de dependencia:</span> 46,4%</li>
+                <li><span class="highlight">Tasa de masculinidad:</span> 96,5</li>
+                <li><span class="highlight">Migración:</span> 1,4 millones</li>
+            </ul>
+        </div>
+        <div class="data-box">
+            <h3>Interpretación</h3>
+            <ul>
+                <li>Envejecimiento poblacional en proceso</li>
+                <li>Bono demográfico activo</li>
+                <li>Predominio femenino leve</li>
+                <li>Migración principalmente de Venezuela</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- SLIDE 14: CONCLUSIONES -->
+<div class="slide">
+    <h1>Conclusiones</h1>
+    <div class="data-box" style="max-width:900px;">
+        <ul>
+            <li>Colombia tiene <span class="highlight">48,2 millones</span> de habitantes con leve predominio femenino</li>
+            <li>La tasa de fecundidad (1,9) está por <span class="highlight">debajo del reemplazo</span>, indicando envejecimiento</li>
+            <li>El <span class="highlight">77,1%</span> vive en zonas urbanas</li>
+            <li>Electricidad y agua tienen alta cobertura, pero el <span class="highlight">internet necesita mejora</span> (47,1%)</li>
+            <li>La <span class="highlight">jefatura femenina</span> ha crecido casi al 50%</li>
+        </ul>
+    </div>
+    <p style="margin-top:30px;color:#aaa;">Estos datos son fundamentales para la planeación de políticas públicas</p>
+</div>
+
+<!-- SLIDE 15: CRÉDITOS -->
+<div class="slide">
+    <h1>Créditos</h1>
+    <div class="data-box" style="text-align:center;">
+        <p><strong>Realizado por:</strong> David Alexander Garrido Hernandez</p>
+        <p><strong>Programa:</strong> Análisis y Desarrollo de Software</p>
+        <p><strong>Centro de Formación:</strong> ASTIN - Regional Valle</p>
+        <p><strong>Instructor:</strong> Nelson Londoño Vergara</p>
+        <p><strong>Fuente:</strong> DANE - CNPV 2018</p>
+    </div>
+    <h2 style="margin-top:40px;color:#00d4ff;">¡Gracias por su atención!</h2>
+</div>
+
+</div>
+
+<div class="slide-counter"><span id="currentSlideNum">1</span> / <span id="totalSlidesNum">15</span></div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let isTransitioning = false;
+    document.getElementById('totalSlidesNum').textContent = totalSlides;
+
+    function showSlide(n, direction = 'next') {
+        if (isTransitioning) return;
+        isTransitioning = true;
+        const prev = slides[currentSlide];
+        currentSlide = n;
+        const next = slides[currentSlide];
+        next.style.transform = direction === 'next' ? 'translateX(30px)' : 'translateX(-30px)';
+        prev.classList.remove('active');
+        next.classList.add('active');
+        document.getElementById('currentSlideNum').textContent = currentSlide + 1;
+        setTimeout(() => { next.style.transform = 'translateX(0)'; }, 50);
+        setTimeout(() => { isTransitioning = false; updateButtons(); }, 500);
+    }
+    function nextSlide() { if (currentSlide < totalSlides - 1 && !isTransitioning) showSlide(currentSlide + 1, 'next'); }
+    function prevSlide() { if (currentSlide > 0 && !isTransitioning) showSlide(currentSlide - 1, 'prev'); }
+    function updateButtons() {
+        const prev = document.querySelector('.prev-btn');
+        const next = document.querySelector('.next-btn');
+        if (prev) prev.style.opacity = currentSlide === 0 ? '0.3' : '1';
+        if (next) next.style.opacity = currentSlide === totalSlides - 1 ? '0.3' : '1';
+    }
+    document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+    });
+    window.onload = updateButtons;
+</script>
+</body>
+</html>
