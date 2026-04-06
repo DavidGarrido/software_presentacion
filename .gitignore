@@ -8,7 +8,7 @@ grabaciones/
 estado_grabacion.json
 
 # Archivos locales regenerables
-celular.html
+# celular.html (Ya no se ignora)
 
 # Python (servidor local, no necesario en GitHub Pages)
 __pycache__/

@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#FF385C">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Presentador Móvil</title>
+    <style>
+        /* ═══════════════════════════════════════════
+           Airbnb Design System - Light/Dark Mode
+           ═══════════════════════════════════════════ */
+        :root {
+            /* Airbnb Palette */
+            --airbnb-red: #FF385C;
+            --airbnb-red-dark: #E31C5F;
+            --airbnb-pink: #FFEAE6;
+
+            /* Light Mode (default) */
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F7F7F7;
+            --bg-tertiary: #EBEBEB;
+            --text-primary: #222222;
+            --text-secondary: #717171;
+            --text-muted: #8C8C8C;
+            --border-color: #DDDDDD;
+            --border-light: #EBEBEB;
+            --shadow-1: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-2: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-3: 0 8px 24px rgba(0,0,0,0.12);
+            --shadow-overlay: 0 8px 30px rgba(0,0,0,0.18);
+
+            /* Spacing & Radius Airbnb */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --radius-full: 50px;
+
+            /* Typography */
+            --font-family: 'Circular', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Dark Mode */
+                --bg-primary: #222222;
+                --bg-secondary: #1A1A1A;
+                --bg-tertiary: #383838;
+                --text-primary: #FFFFFF;
+                --text-secondary: #A0A0A0;
+                --text-muted: #717171;
+                --border-color: #383838;
+                --border-light: #2A2A2A;
+                --shadow-1: 0 1px 2px rgba(0,0,0,0.2);
+                --shadow-2: 0 4px 12px rgba(0,0,0,0.3);
+                --shadow-3: 0 8px 24px rgba(0,0,0,0.4);
+                --shadow-overlay: 0 12px 40px rgba(0,0,0,0.5);
+            }
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        html, body {
+            height:100%;
+            background:var(--bg-primary);
+            color:var(--text-primary);
+            font-family:var(--font-family);
+            overflow:hidden;
+        }
+
+        /* ── Top Bar Airbnb Style ── */
+        .top-bar {
+            background:var(--bg-primary);
+            padding:0 16px;
+            height:60px;
+            display:flex; align-items:center; justify-content:space-between;
+            flex-shrink:0;
+            border-bottom:1px solid var(--border-light);
+        }
+        .pres-selector {
+            display:flex; align-items:center; gap:8px;
+            background:var(--bg-secondary);
+            border:1px solid var(--border-color);
+            border-radius:var(--radius-md);
+            padding:10px 14px;
+            cursor:pointer;
+            flex:1; min-width:0; max-width:calc(100% - 100px);
+            transition:all 0.15s ease;
+        }
+        .pres-selector:active { background:var(--bg-tertiary); }
+        .pres-selector-icon {
+            width:24px; height:24px;
+            background:var(--airbnb-red);
+            border-radius:var(--radius-full);
+            display:flex; align-items:center; justify-content:center;
+            flex-shrink:0;
+        }
+        .pres-selector-icon svg { width:14px; height:14px; fill:white; }
+        .pres-selector-name {
+            font-size:0.9rem; color:var(--text-primary);
+            font-weight:600;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        }
+        .pres-selector-arrow {
+            font-size:0.7rem; color:var(--text-muted); flex-shrink:0;
+        }
+        .slide-counter-top {
+            font-size:0.85rem; color:var(--text-secondary);
+            white-space:nowrap; flex-shrink:0;
+            background:var(--bg-secondary);
+            border-radius:var(--radius-full);
+            padding:8px 14px;
+            font-weight:500;
+        }
+        .slide-counter-top span { color:var(--text-primary); font-weight:700; }
+
+        /* ── Main Body ── */
+        .main-body {
+            display:flex; flex-direction:column;
+            height: calc(100% - 60px - 80px);
+            overflow:hidden;
+        }
+
+        /* ── Slide Preview ── */
+        .slide-wrap {
+            width:100%; flex-shrink:0;
+            aspect-ratio:16/9;
+            background:#000;
+            overflow:hidden;
+            position:relative;
+            box-shadow:var(--shadow-2);
+        }
+        .slide-wrap iframe {
+            position:absolute; top:0; left:0;
+            width:1280px; height:720px;
+            border:none;
+            transform-origin:top left;
+        }
+
+        /* ── Notes Area ── */
+        .notes-area {
+            flex:1; overflow-y:auto;
+            padding:16px 18px 12px;
+            -webkit-overflow-scrolling:touch;
+            background:var(--bg-primary);
+        }
+        .notes-label {
+            font-size:0.7rem; color:var(--text-muted);
+            text-transform:uppercase;
+            letter-spacing:0.08em; margin-bottom:10px;
+            font-weight:700;
+        }
+        .notes-text {
+            font-size:1rem; line-height:1.7; color:var(--text-primary);
+            white-space:pre-wrap;
+        }
+        .notes-text.empty {
+            color:var(--text-muted); font-style:italic;
+        }
+
+        /* ── Mobile Info + Ver Mas Button ── */
+        .mobile-info {
+            display:flex; flex-direction:column; gap:10px;
+            margin-top:16px; padding:14px 16px;
+            background:var(--bg-secondary);
+            border:1px solid var(--border-light);
+            border-radius:var(--radius-md);
+            font-size:0.85rem; color:var(--text-secondary);
+            line-height:1.6;
+        }
+        .mobile-info strong { color:var(--text-primary); font-weight:600; }
+
+        .ver-mas-btn {
+            display:flex; align-items:center; justify-content:center; gap:8px;
+            width:100%; padding:12px; margin-top:4px;
+            background:var(--airbnb-red);
+            color:white;
+            border:none; border-radius:var(--radius-md);
+            font-size:0.9rem; font-weight:700;
+            cursor:pointer;
+            transition:all 0.15s ease;
+        }
+        .ver-mas-btn:active {
+            background:var(--airbnb-red-dark);
+            transform:scale(0.98);
+        }
+        .ver-mas-btn svg { width:18px; height:18px; fill:currentColor; }
+
+        /* ── Nav Bar ── */
+        .nav-bar {
+            height:80px;
+            display:flex; align-items:center; gap:12px;
+            padding:0 16px;
+            background:var(--bg-primary);
+            border-top:1px solid var(--border-light);
+            flex-shrink:0;
+        }
+        .nav-btn {
+            flex:1; height:52px; border:none; border-radius:var(--radius-md);
+            font-size:0.95rem; font-weight:700; cursor:pointer;
+            transition:all 0.12s ease;
+            display:flex; align-items:center; justify-content:center; gap:8px;
+        }
+        .btn-prev {
+            background:var(--bg-secondary);
+            color:var(--text-secondary);
+            border:1px solid var(--border-color);
+        }
+        .btn-prev:active { background:var(--bg-tertiary); }
+        .btn-prev:disabled { opacity:0.3; }
+        .btn-next {
+            background:var(--airbnb-red);
+            color:white;
+        }
+        .btn-next:active {
+            background:var(--airbnb-red-dark);
+            transform:scale(0.97);
+        }
+        .btn-next:disabled { opacity:0.3; }
+
+        /* ── Bottom Sheet: Presentations ── */
+        .sheet-overlay {
+            position:fixed; inset:0;
+            background:rgba(0,0,0,0.5);
+            z-index:100;
+            opacity:0; pointer-events:none;
+            transition:opacity 0.25s ease;
+            backdrop-filter:blur(4px);
+        }
+        .sheet-overlay.open { opacity:1; pointer-events:auto; }
+
+        .bottom-sheet {
+            position:fixed; bottom:0; left:0; right:0;
+            background:var(--bg-primary);
+            border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+            border-top:1px solid var(--border-light);
+            z-index:101;
+            transform:translateY(100%);
+            transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);
+            max-height:80vh; display:flex; flex-direction:column;
+            box-shadow:var(--shadow-overlay);
+        }
+        .bottom-sheet.open { transform:translateY(0); }
+
+        .sheet-handle {
+            width:36px; height:5px;
+            background:var(--border-color);
+            border-radius:3px;
+            margin:10px auto 0;
+        }
+        .sheet-header {
+            padding:16px 20px 12px;
+            display:flex; align-items:center; justify-content:space-between;
+            border-bottom:1px solid var(--border-light);
+            flex-shrink:0;
+        }
+        .sheet-title {
+            font-size:1.1rem; font-weight:700;
+            color:var(--text-primary);
+            display:flex; align-items:center; gap:8px;
+        }
+        .sheet-title svg { width:20px; height:20px; fill:var(--airbnb-red); }
+        .sheet-close {
+            background:none; border:none;
+            color:var(--text-muted);
+            font-size:1.5rem;
+            cursor:pointer;
+            padding:4px; line-height:1;
+            width:36px; height:36px;
+            border-radius:var(--radius-full);
+            display:flex; align-items:center; justify-content:center;
+        }
+        .sheet-close:active { background:var(--bg-secondary); }
+        .sheet-body {
+            overflow-y:auto; -webkit-overflow-scrolling:touch;
+            padding:12px 16px 24px; flex:1;
+        }
+        .sheet-import-btn {
+            width:100%; padding:14px;
+            border-radius:var(--radius-md);
+            background:var(--bg-secondary);
+            color:var(--text-primary);
+            border:1px solid var(--border-color);
+            font-size:0.9rem; font-weight:600;
+            cursor:pointer;
+            margin-bottom:12px;
+            display:flex; align-items:center; justify-content:center; gap:8px;
+            transition:all 0.15s ease;
+        }
+        .sheet-import-btn:active { background:var(--bg-tertiary); }
+        .sheet-import-btn svg { width:18px; height:18px; fill:currentColor; }
+
+        .pres-item {
+            display:flex; align-items:center; gap:12px;
+            padding:14px 16px;
+            border-radius:var(--radius-md);
+            border:1px solid var(--border-light);
+            background:var(--bg-secondary);
+            margin-bottom:8px;
+            cursor:pointer;
+            transition:all 0.15s ease;
+        }
+        .pres-item:active { background:var(--bg-tertiary); }
+        .pres-item.active {
+            border-color:var(--airbnb-red);
+            background:var(--airbnb-pink);
+        }
+        .pres-item-name {
+            flex:1; font-size:0.95rem;
+            color:var(--text-primary);
+            font-weight:500;
+        }
+        .pres-item.active .pres-item-name {
+            color:var(--airbnb-red);
+            font-weight:700;
+        }
+        .pres-item-count {
+            font-size:0.8rem;
+            color:var(--text-muted);
+            white-space:nowrap;
+        }
+        .pres-item-check {
+            width:24px; height:24px;
+            background:var(--airbnb-red);
+            border-radius:var(--radius-full);
+            display:flex; align-items:center; justify-content:center;
+            flex-shrink:0;
+        }
+        .pres-item-check svg { width:14px; height:14px; fill:white; }
+        .sheet-empty {
+            color:var(--text-muted);
+            font-size:0.9rem;
+            text-align:center;
+            padding:30px 0;
+        }
+
+        /* ── No Presentation State ── */
+        .no-pres {
+            flex:1; display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            gap:16px; padding:30px;
+        }
+        .no-pres-icon {
+            width:80px; height:80px;
+            background:var(--airbnb-red);
+            border-radius:var(--radius-xl);
+            display:flex; align-items:center; justify-content:center;
+        }
+        .no-pres-icon svg { width:40px; height:40px; fill:white; }
+        .no-pres-text {
+            color:var(--text-secondary);
+            font-size:1rem;
+            text-align:center;
+            line-height:1.6;
+        }
+        .no-pres-btn {
+            margin-top:8px;
+            padding:14px 28px;
+            border-radius:var(--radius-full);
+            background:var(--airbnb-red);
+            color:white;
+            border:none;
+            font-size:1rem; font-weight:700;
+            cursor:pointer;
+            display:flex; align-items:center; gap:8px;
+            transition:all 0.15s ease;
+        }
+        .no-pres-btn:active {
+            background:var(--airbnb-red-dark);
+            transform:scale(0.97);
+        }
+        .no-pres-btn svg { width:20px; height:20px; fill:currentColor; }
+
+        /* ── Modal: Landing Page ── */
+        #modalOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 99999;
+        }
+        #modalOverlay.open { display: block; }
+
+        #modalContainer {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            background: #fff;
+            border-radius: 12px;
+            z-index: 100000;
+            flex-direction: column;
+        }
+        #modalOverlay.open #modalContainer { display: flex; }
+
+        @media (prefers-color-scheme: dark) {
+            #modalContainer { background: #222; }
+        }
+
+        .modal-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+        @media (prefers-color-scheme: dark) {
+            .modal-header { border-bottom-color: #444; }
+        }
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #eee;
+            border-radius: 50%;
+            color: #333;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        @media (prefers-color-scheme: dark) {
+            .modal-close { background: #444; color: #fff; }
+        }
+        .modal-body {
+            flex: 1;
+            overflow: hidden;
+            background: #fafafa;
+        }
+        @media (prefers-color-scheme: dark) {
+            .modal-body { background: #1a1a1a; }
+        }
+        .modal-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Swipe Hint */
+        .swipe-hint {
+            position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+            background:rgba(0,0,0,0.8); color:white;
+            font-size:0.8rem;
+            padding:8px 16px;
+            border-radius:var(--radius-full);
+            pointer-events:none;
+            opacity:0; transition:opacity 0.3s ease;
+            white-space:nowrap;
+        }
+        .swipe-hint.show { opacity:1; }
+
+        #importInput { display:none; }
+    </style>
+</head>
+<body>
+
+<!-- ── TOP BAR ── -->
+<div class="top-bar">
+    <div class="pres-selector" onclick="openSheet()">
+        <div class="pres-selector-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+        </div>
+        <span class="pres-selector-name" id="presName">Sin presentación</span>
+        <span class="pres-selector-arrow">▾</span>
+    </div>
+    <div class="slide-counter-top" id="slideCounter" style="display:none">
+        <span id="currentNum">1</span> / <span id="totalNum">1</span>
+    </div>
+</div>
+
+<!-- ── CUERPO ── -->
+<div class="main-body" id="mainBody">
+
+    <!-- Estado sin presentación -->
+    <div class="no-pres" id="noPres">
+        <div class="no-pres-icon">
+            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+        </div>
+        <div class="no-pres-text">Selecciona una presentación<br>para comenzar</div>
+        <button class="no-pres-btn" onclick="openSheet()">
+            <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+            Ver presentaciones
+        </button>
+    </div>
+
+    <!-- Vista previa del slide -->
+    <div class="slide-wrap" id="slideWrap" style="display:none">
+        <iframe id="slideFrame" src="viewer.html" allow="autoplay"></iframe>
+    </div>
+
+    <!-- Área de notas -->
+    <div class="notes-area" id="notesArea" style="display:none">
+        <div class="notes-label">Guión</div>
+        <div class="notes-text" id="notesText"></div>
+
+        <!-- Info + Botón Ver Más -->
+        <div class="mobile-info">
+            <span>Esta es una <strong>previsualización móvil</strong>. Para acceder a todas las funciones (grabación, cámara, editor, OBS) ingresa desde un PC.</span>
+            <button class="ver-mas-btn" onclick="openModal()">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                Ver todas las funciones
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── BARRA DE NAVEGACIÓN ── -->
+<div class="nav-bar">
+    <button class="nav-btn btn-prev" id="btnPrev" onclick="prevSlide()" disabled>
+        ◀ Anterior
+    </button>
+    <button class="nav-btn btn-next" id="btnNext" onclick="nextSlide()" disabled>
+        Siguiente ▶
+    </button>
+</div>
+
+<!-- ── BOTTOM SHEET: Presentaciones ── -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+<div class="bottom-sheet" id="bottomSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+        <span class="sheet-title">
+            <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+            Presentaciones
+        </span>
+        <button class="sheet-close" onclick="closeSheet()">✕</button>
+    </div>
+    <div class="sheet-body">
+        <button class="sheet-import-btn" onclick="importarJSON()">
+            <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+            Importar JSON
+        </button>
+        <div id="presList"><p class="sheet-empty">Cargando…</p></div>
+    </div>
+</div>
+
+<!-- ── MODAL: Landing Page ── -->
+<div id="modalOverlay" onclick="closeModal()">
+    <div id="modalContainer" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <span class="modal-title">Funciones del Presentador</span>
+            <button type="button" class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <iframe id="landingFrame" src="landing_mobile.html" allow="autoplay"></iframe>
+        </div>
+    </div>
+</div>
+
+<input type="file" id="importInput" accept=".json" onchange="onImportJSON(event)">
+<div class="swipe-hint" id="swipeHint">← desliza para navegar →</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════
+// IndexedDB
+// ═══════════════════════════════════════════
+let _db = null;
+function openDB() {
+    if (_db) return Promise.resolve(_db);
+    return new Promise((res, rej) => {
+        const req = indexedDB.open('PresentacionesDB', 1);
+        req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('presentations'))
+                db.createObjectStore('presentations', { keyPath:'id' });
+        };
+        req.onsuccess = e => { _db = e.target.result; res(_db); };
+        req.onerror   = e => rej(e.target.error);
+    });
+}
+async function dbGetAll(store) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+        const tx  = db.transaction(store, 'readonly');
+        const req = tx.objectStore(store).getAll();
+        req.onsuccess = e => res(e.target.result);
+        req.onerror   = e => rej(e.target.error);
+    });
+}
+async function dbPut(store, obj) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+        const tx  = db.transaction(store, 'readwrite');
+        const req = tx.objectStore(store).put(obj);
+        req.onsuccess = e => res(e.target.result);
+        req.onerror   = e => rej(e.target.error);
+    });
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+// ═══════════════════════════════════════════
+// Estado global
+// ═══════════════════════════════════════════
+let currentPres  = null;
+let currentIndex = 0;
+let viewerReady  = false;
+
+// ═══════════════════════════════════════════
+// iframe del viewer
+// ═══════════════════════════════════════════
+const slideFrame = document.getElementById('slideFrame');
+
+slideFrame.addEventListener('load', () => {
+    viewerReady = true;
+    if (currentPres) {
+        sendToViewer({ action:'load', slides:currentPres.slides, index:currentIndex });
+    }
+});
+
+function sendToViewer(msg) {
+    if (!viewerReady) return;
+    try { slideFrame.contentWindow.postMessage(msg, '*'); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════
+// Cargar presentación
+// ═══════════════════════════════════════════
+function loadPresentacion(pres) {
+    currentPres  = pres;
+    currentIndex = 0;
+    localStorage.setItem('lastPresId', pres.id);
+    document.getElementById('presName').textContent = pres.name;
+
+    document.getElementById('noPres').style.display     = 'none';
+    document.getElementById('slideWrap').style.display  = '';
+    document.getElementById('notesArea').style.display  = '';
+    document.getElementById('slideCounter').style.display = '';
+
+    sendToViewer({ action:'load', slides:pres.slides, index:0 });
+    updateUI();
+    closeSheet();
+}
+
+function updateUI() {
+    if (!currentPres) return;
+    const s = currentPres.slides[currentIndex];
+
+    document.getElementById('currentNum').textContent = currentIndex + 1;
+    document.getElementById('totalNum').textContent   = currentPres.slides.length;
+
+    const notes  = s?.notes || '';
+    const notesEl = document.getElementById('notesText');
+    if (notes.trim()) {
+        notesEl.textContent = notes;
+        notesEl.className   = 'notes-text';
+    } else {
+        notesEl.textContent = 'Sin guión para este slide.';
+        notesEl.className   = 'notes-text empty';
+    }
+
+    document.getElementById('notesArea').scrollTop = 0;
+
+    document.getElementById('btnPrev').disabled = currentIndex <= 0;
+    document.getElementById('btnNext').disabled = currentIndex >= currentPres.slides.length - 1;
+}
+
+function nextSlide() {
+    if (!currentPres || currentIndex >= currentPres.slides.length - 1) return;
+    currentIndex++;
+    sendToViewer({ action:'goto', index:currentIndex });
+    updateUI();
+}
+function prevSlide() {
+    if (!currentPres || currentIndex <= 0) return;
+    currentIndex--;
+    sendToViewer({ action:'goto', index:currentIndex });
+    updateUI();
+}
+
+// ═══════════════════════════════════════════
+// Bottom Sheet
+// ═══════════════════════════════════════════
+function openSheet() {
+    document.getElementById('sheetOverlay').classList.add('open');
+    document.getElementById('bottomSheet').classList.add('open');
+    renderPresList();
+}
+function closeSheet() {
+    document.getElementById('sheetOverlay').classList.remove('open');
+    document.getElementById('bottomSheet').classList.remove('open');
+}
+
+async function renderPresList() {
+    const list = document.getElementById('presList');
+    list.innerHTML = '<p class="sheet-empty">Cargando…</p>';
+    let all;
+    try { all = await dbGetAll('presentations'); } catch(e) {
+        list.innerHTML = '<p class="sheet-empty">No se pudo acceder a las presentaciones guardadas.</p>';
+        return;
+    }
+    if (!all.length) {
+        list.innerHTML = '<p class="sheet-empty">No hay presentaciones guardadas.<br>Importa un JSON o crea una desde el escritorio.</p>';
+        return;
+    }
+    list.innerHTML = '';
+    all.forEach(p => {
+        const isActive = currentPres?.id === p.id;
+        const item = document.createElement('div');
+        item.className = 'pres-item' + (isActive ? ' active' : '');
+        item.innerHTML = `
+            ${isActive ? '<span class="pres-item-check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>' : ''}
+            <span class="pres-item-name">${escHtml(p.name)}</span>
+            <span class="pres-item-count">${p.slides?.length || 0} slides</span>`;
+        item.onclick = () => loadPresentacion(p);
+        list.appendChild(item);
+    });
+}
+
+// ═══════════════════════════════════════════
+// Modal: Landing Page
+// ═══════════════════════════════════════════
+function openModal() {
+    console.log('openModal called');
+    document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() {
+    console.log('closeModal called');
+    document.getElementById('modalOverlay').classList.remove('open');
+}
+
+// Escuchar mensaje del iframe para cerrar
+window.addEventListener('message', function(e) {
+    if (e.data === 'close-landing') {
+        closeModal();
+    }
+});
+
+// ═══════════════════════════════════════════
+// Importar JSON
+// ═══════════════════════════════════════════
+function importarJSON() {
+    document.getElementById('importInput').click();
+}
+async function onImportJSON(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        let presArr = Array.isArray(data) ? data : (data.slides ? [data] : null);
+        if (!presArr) { alert('Formato JSON no reconocido.'); return; }
+        for (const p of presArr) {
+            if (!p.id) p.id = uid();
+            if (!p.name) p.name = file.name.replace('.json','');
+            if (!Array.isArray(p.slides)) p.slides = [];
+            await dbPut('presentations', p);
+        }
+        await renderPresList();
+        alert(`✓ ${presArr.length} presentación(es) importada(s).`);
+    } catch(err) {
+        alert('Error al leer el archivo: ' + err.message);
+    }
+}
+
+// ═══════════════════════════════════════════
+// Escalar iframe
+// ═══════════════════════════════════════════
+function scaleViewer() {
+    const wrap  = document.getElementById('slideWrap');
+    const frame = document.getElementById('slideFrame');
+    const scale = wrap.clientWidth / 1280;
+    frame.style.transform = `scale(${scale})`;
+}
+
+const _ro = new ResizeObserver(scaleViewer);
+_ro.observe(document.getElementById('slideWrap'));
+scaleViewer();
+
+// ═══════════════════════════════════════════
+// Gestos táctiles
+// ═══════════════════════════════════════════
+let touchStartX = 0, touchStartY = 0, swipeHintShown = false;
+
+document.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+}, { passive:true });
+
+document.addEventListener('touchend', e => {
+    if (document.getElementById('bottomSheet').classList.contains('open')) return;
+    if (document.getElementById('modalOverlay').classList.contains('open')) return;
+    if (e.target.closest('#notesArea')) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < 0) nextSlide();
+    else         prevSlide();
+}, { passive:true });
+
+function showSwipeHint() {
+    if (swipeHintShown) return;
+    swipeHintShown = true;
+    const hint = document.getElementById('swipeHint');
+    hint.classList.add('show');
+    setTimeout(() => hint.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════════════
+// Teclado bluetooth
+// ═══════════════════════════════════════════
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); prevSlide(); }
+    if (e.key === 'Escape') {
+        closeSheet();
+        closeModal();
+    }
+});
+
+// ═══════════════════════════════════════════
+// Utilidades
+// ═══════════════════════════════════════════
+function escHtml(str) {
+    return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════
+// Inicio
+// ═══════════════════════════════════════════
+(async () => {
+    const all = await dbGetAll('presentations');
+    if (!all.length) {
+        try {
+            const tut = await fetch('tutorial.json').then(r => r.json());
+            await dbPut('presentations', tut);
+            loadPresentacion(tut);
+        } catch(e) { console.warn('No se pudo cargar tutorial.json', e); }
+    } else {
+        const lastId = localStorage.getItem('lastPresId');
+        const last   = (lastId && all.find(p => p.id === lastId))
+                    || all.sort((a,b) => (b.updatedAt||'').localeCompare(a.updatedAt||''))[0];
+        loadPresentacion(last);
+    }
+    showSwipeHint();
+})();
+</script>
+</body>
+</html>
