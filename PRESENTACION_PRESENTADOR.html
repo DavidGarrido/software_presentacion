@@ -708,17 +708,30 @@
         }
         .field-group textarea { min-height: 100px; }
 
-        .slide-list { display:flex; flex-direction:column; gap:5px; }
-        .slide-list-item {
-            display:flex; align-items:center; gap:6px; padding:7px 10px;
-            background:#0d0d1a; border-radius:6px; border:1px solid #2a2a40; cursor:pointer;
+        /* ── Editor: Lista de Slides (Estilo Airbnb) ── */
+        .slide-list { display: flex; flex-direction: column; gap: 6px; }
+        .slide-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s ease;
+            position: relative;
         }
-        .slide-list-item:hover { border-color:#555; }
-        .slide-list-item.active { border-color:#00d4ff; background:#00d4ff10; }
-        .slide-list-item .sli-num { color:#555; font-size:0.75rem; width:20px; flex-shrink:0; }
-        .slide-list-item .sli-title { flex:1; font-size:0.85rem; color:#ddd; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .sli-del { background:none; border:none; color:#555; cursor:pointer; font-size:0.9rem; padding:0 2px; }
-        .sli-del:hover { color:#e74c3c; }
+        .slide-item:hover { border-color: var(--text-muted); background: var(--bg-tertiary); }
+        .slide-item.active { border-color: var(--airbnb-red); background: rgba(255, 56, 92, 0.08); }
+        .slide-item .sli-num {
+            font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
+            width: 20px; height: 20px; background: var(--bg-tertiary);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .slide-item.active .sli-num { background: var(--airbnb-red); color: white; }
+        .slide-item .sli-title { flex: 1; font-size: 0.85rem; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .slide-item .sli-del {
+            width: 24px; height: 24px; border-radius: 50%; border: none;
+            background: transparent; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.12s ease; font-size: 0.75rem; color: var(--text-muted); padding: 0;
+        }
+        .slide-item .sli-del:hover { background: var(--airbnb-red); color: white; }
 
         .btn-primary {
             background: var(--airbnb-red);
@@ -732,6 +745,40 @@
             transition: all 0.15s;
         }
         .btn-primary:hover { background: var(--airbnb-red-dark); }
+
+        .btn-outline {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .btn-outline:hover:not(:disabled) {
+            background: var(--bg-secondary);
+            border-color: var(--text-muted);
+            box-shadow: var(--shadow-1);
+        }
+        .btn-outline:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+        .history-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            min-width: 32px;
+            text-align: center;
+            background: var(--bg-secondary);
+            padding: 4px 8px;
+            border-radius: var(--radius-full);
+        }
         .btn-secondary {
             background: var(--bg-tertiary);
             color: var(--text-primary);
@@ -757,41 +804,105 @@
         }
         .btn-danger:hover { background: #E31C5F; }
 
-        /* Lista de presentaciones */
-        .pres-list { display:flex; flex-direction:column; gap:5px; }
-        .pres-list-item {
-            display:flex; align-items:center; gap:8px; padding:8px 10px;
-            background:#0d0d1a; border-radius:7px; border:1px solid #2a2a40; cursor:pointer;
+        /* ── Nueva Lista de Presentaciones (Estilo Airbnb) ── */
+        .pres-list { display: flex; flex-direction: column; gap: 8px; }
+        .pres-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s ease;
         }
-        .pres-list-item:hover { border-color:#555; }
-        .pres-list-item.active { border-color:#00d4ff; background:#00d4ff0d; }
-        .pli-name { flex:1; font-size:0.85rem; color:#ddd; }
-        .pli-count { font-size:0.72rem; color:#666; }
-        .pli-btn { background:none; border:none; color:#555; cursor:pointer; font-size:0.85rem; padding:0 2px; }
-        .pli-btn:hover { color:#e74c3c; }
+        .pres-item:hover { border-color: var(--text-muted); background: var(--bg-tertiary); }
+        .pres-item.active { border-color: var(--airbnb-red); background: rgba(255, 56, 92, 0.08); }
+        .pres-info { flex: 1; min-width: 0; }
+        .pres-name { display: block; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pres-count { font-size: 0.75rem; color: var(--text-secondary); }
+        .pres-actions { display: flex; gap: 6px; }
+        .action-btn {
+            width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-color);
+            background: var(--bg-primary); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.12s ease; font-size: 0.85rem; padding: 0; color: var(--text-primary);
+        }
+        .action-btn:hover { background: var(--bg-tertiary); transform: translateY(-1px); box-shadow: var(--shadow-1); }
+        .action-btn:active { transform: scale(0.92); }
+        .action-btn.btn-delete:hover { color: white; background: var(--airbnb-red); border-color: var(--airbnb-red); }
 
         /* Grabaciones guardadas */
 
-        /* Layout cards */
-        .layout-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
+        /* ── Editor: Grid de Layouts (Estilo Airbnb) ── */
+        .layout-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; }
         .layout-card {
-            display:flex; flex-direction:column; align-items:center; gap:4px;
-            padding:6px 4px; border-radius:7px; cursor:pointer;
-            border:2px solid #2a2a40; background:#0d0d1a; transition:all 0.15s;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            padding: 10px 6px; border-radius: var(--radius-md); cursor: pointer;
+            border: 2px solid var(--border-color); background: var(--bg-primary);
+            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+            position: relative; overflow: hidden;
         }
-        .layout-card:hover { border-color:#555; }
+        .layout-card svg { width: 100%; height: auto; border-radius: var(--radius-sm); filter: grayscale(0.2); transition: all 0.2s; }
+        .layout-card span { font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-align: center; }
+        
+        .layout-card:hover { border-color: var(--text-muted); transform: translateY(-2px); box-shadow: var(--shadow-2); }
+        .layout-card.active { border-color: var(--airbnb-red); background: rgba(255, 56, 92, 0.05); }
+        .layout-card.active span { color: var(--airbnb-red); }
+        .layout-card.active svg { filter: none; }
+        
+        /* Ajuste de colores en los SVGs de los layouts para que coincidan con el tema */
+        .layout-card svg [fill="#00d4ff"] { fill: var(--airbnb-red); }
+        .layout-card svg [stroke="#00d4ff"] { stroke: var(--airbnb-red); }
+        .layout-card svg [fill="white"] { fill: var(--text-primary); }
         .layout-card.active { border-color:#00d4ff; background:#00d4ff0d; }
         .layout-card span { font-size:0.62rem; color:#aaa; }
         .layout-card.active span { color:#00d4ff; }
         .layout-card svg { width:100%; height:auto; border-radius:3px; }
 
-        /* Color swatches */
+        /* ── Editor: Muestras de Color (Estilo Airbnb) ── */
+        .color-swatches { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
         .color-swatch {
-            width:22px; height:22px; border-radius:5px; border:2px solid transparent;
-            cursor:pointer; transition:border-color 0.12s; flex-shrink:0;
+            width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border-color);
+            cursor: pointer; transition: all 0.15s ease; flex-shrink: 0; box-shadow: var(--shadow-1);
         }
-        .color-swatch:hover { border-color:#888; }
-        .color-swatch.active { border-color:#00d4ff; }
+        .color-swatch:hover { transform: scale(1.15); border-color: var(--text-muted); box-shadow: var(--shadow-2); }
+        .color-swatch.active { border-color: var(--airbnb-red); transform: scale(1.1); box-shadow: 0 0 0 1px var(--airbnb-red); }
+        
+        .color-input-group { display: flex; gap: 8px; align-items: center; }
+        .color-picker-wrapper {
+            width: 38px; height: 34px; border-radius: var(--radius-md); border: 1px solid var(--border-color);
+            background: var(--bg-primary); padding: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .color-picker-wrapper input[type="color"] {
+            width: 100%; height: 100%; border: none; padding: 0; background: none; cursor: pointer; border-radius: var(--radius-sm);
+        }
+
+        /* ── Editor: Tarjetas de Elementos (Estilo Airbnb) ── */
+        .el-card {
+            background: var(--bg-primary); border: 1px solid var(--border-color);
+            border-radius: var(--radius-md); padding: 12px; margin-bottom: 10px;
+            display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-1);
+            transition: border-color 0.15s;
+        }
+        .el-card:hover { border-color: var(--text-muted); }
+        .el-card-header { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border-light); padding-bottom: 8px; margin-bottom: 2px; }
+        
+        .el-type-group { display: flex; background: var(--bg-secondary); border-radius: var(--radius-sm); padding: 2px; }
+        .el-type-btn {
+            padding: 4px 8px; border: none; background: transparent; border-radius: var(--radius-sm);
+            font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+        }
+        .el-type-btn.active { background: var(--bg-primary); color: var(--airbnb-red); box-shadow: var(--shadow-1); }
+        
+        .el-control-row { display: flex; align-items: center; gap: 8px; }
+        .el-lbl { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); width: 14px; text-align: center; }
+        .el-val { font-size: 0.7rem; color: var(--text-secondary); min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+        
+        input[type="range"] { accent-color: var(--airbnb-red); height: 4px; cursor: pointer; }
+        
+        .el-style-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+        .style-btn {
+            width: 28px; height: 28px; border: 1px solid var(--border-color); background: var(--bg-secondary);
+            border-radius: var(--radius-sm); cursor: pointer; font-size: 0.75rem; color: var(--text-primary);
+            display: flex; align-items: center; justify-content: center; transition: all 0.1s;
+        }
+        .style-btn.active { background: var(--airbnb-red); color: white; border-color: var(--airbnb-red); }
+        .style-btn:hover:not(.active) { background: var(--bg-tertiary); }
 
         /* Template cards */
         .ed-slide-form {
@@ -1065,23 +1176,25 @@
     <div class="modal" style="max-width:920px;">
         <div class="modal-header">
             <h2 id="editorTitle">Nueva presentación</h2>
-            <div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:8px;">
-                <button id="edUndoBtn" onclick="edUndo()" disabled title="Deshacer (Ctrl+Z)"
-                    style="padding:4px 10px;border:1px solid #2a2a40;border-radius:5px;background:#0d0d1a;color:#aaa;font-size:0.78rem;cursor:pointer;transition:all 0.15s;">↩ Deshacer</button>
-                <button id="edRedoBtn" onclick="edRedo()" disabled title="Rehacer (Ctrl+Y)"
-                    style="padding:4px 10px;border:1px solid #2a2a40;border-radius:5px;background:#0d0d1a;color:#aaa;font-size:0.78rem;cursor:pointer;transition:all 0.15s;">↪ Rehacer</button>
-                <span id="edHistoryLabel" style="font-size:0.68rem;color:#444;min-width:28px;text-align:center;"></span>
+            <div style="display:flex; align-items:center; gap:8px; margin-left:auto; margin-right:12px;">
+                <button id="edUndoBtn" class="btn-outline" onclick="edUndo()" disabled title="Deshacer (Ctrl+Z)">
+                    <span>↩</span> Deshacer
+                </button>
+                <button id="edRedoBtn" class="btn-outline" onclick="edRedo()" disabled title="Rehacer (Ctrl+Y)">
+                    <span>↪</span> Rehacer
+                </button>
+                <span id="edHistoryLabel" class="history-label"></span>
             </div>
             <button class="modal-close" onclick="closeModal('modalEditor')">✕</button>
         </div>
         <div class="modal-body" style="flex-direction:row;gap:0;padding:0;overflow:hidden;height:540px;">
 
             <!-- Lista de slides -->
-            <div style="width:175px;flex-shrink:0;background:#0a0a15;border-right:1px solid #2a2a40;display:flex;flex-direction:column;padding:10px;gap:6px;overflow:hidden;">
+            <div style="width:190px; flex-shrink:0; background:var(--bg-secondary); border-right:1px solid var(--border-color); display:flex; flex-direction:column; padding:12px; gap:10px; overflow:hidden;">
                 <input type="text" id="edPresName" placeholder="Nombre de la presentación"
-                    style="padding:6px 8px;background:#0d0d1a;border:1px solid #333;border-radius:5px;color:white;font-size:0.8rem;">
-                <div style="flex:1;overflow-y:auto;" id="edSlideList"></div>
-                <button class="btn-primary" style="width:100%;font-size:0.75rem;padding:6px;" onclick="edAddSlide()">+ Agregar slide</button>
+                    style="width:100%; padding:8px 10px; background:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--radius-md); color:var(--text-primary); font-size:0.85rem; font-weight:600;">
+                <div style="flex:1; overflow-y:auto;" id="edSlideList" class="slide-list"></div>
+                <button class="btn-primary" style="width:100%; font-size:0.8rem; padding:10px; border-radius:var(--radius-md);" onclick="edAddSlide()">+ Agregar slide</button>
             </div>
 
             <!-- Editor del slide seleccionado -->
@@ -1112,26 +1225,25 @@
             <h2>&#x2728; Generar con IA</h2>
             <button class="modal-close" onclick="closeModal('modalIA')">&#x2715;</button>
         </div>
-        <div class="modal-body" style="flex-direction:column;gap:14px;padding:20px;">
-            <div>
-                <label style="font-size:0.8rem;color:#aaa;display:block;margin-bottom:5px;">Proveedor</label>
-                <select id="iaProvider" style="width:100%;padding:8px 10px;background:#0d0d1a;border:1px solid #2a2a40;border-radius:6px;color:white;font-size:0.9rem;">
+        <div class="modal-body" style="flex-direction:column; gap:16px; padding:24px;">
+            <div class="field-group">
+                <label>Proveedor de IA</label>
+                <select id="iaProvider">
                     <option value="gemini">Google Gemini (gratuito)</option>
                     <option value="deepseek">DeepSeek</option>
                     <option value="openai">OpenAI</option>
                 </select>
             </div>
-            <div>
-                <label style="font-size:0.8rem;color:#aaa;display:block;margin-bottom:5px;">API Key</label>
-                <input type="password" id="iaApiKey" placeholder="Pega tu API key aqu&#xed;..."
-                    style="width:100%;padding:8px 10px;background:#0d0d1a;border:1px solid #2a2a40;border-radius:6px;color:white;font-size:0.9rem;">
+            <div class="field-group">
+                <label>API Key</label>
+                <input type="password" id="iaApiKey" placeholder="Pega tu API key aquí...">
+                <span style="font-size:0.7rem; color:var(--text-muted); margin-top:4px; display:block;">Tu llave se guarda localmente en el navegador.</span>
             </div>
-            <div>
-                <label style="font-size:0.8rem;color:#aaa;display:block;margin-bottom:5px;">Tema / descripci&#xf3;n</label>
-                <textarea id="iaTema" rows="4" placeholder="Ej: Presentaci&#xf3;n sobre el Censo DANE 2018 con datos de poblaci&#xf3;n y vivienda. Estilo profesional, 10 slides."
-                    style="width:100%;padding:8px 10px;background:#0d0d1a;border:1px solid #2a2a40;border-radius:6px;color:white;font-size:0.9rem;resize:vertical;"></textarea>
+            <div class="field-group">
+                <label>Tema / descripción detallada</label>
+                <textarea id="iaTema" rows="4" placeholder="Ej: Presentación sobre el Censo DANE 2018 con datos de población y vivienda. Estilo profesional, 10 slides."></textarea>
             </div>
-            <div id="iaStatusMsg" style="display:none;padding:10px 14px;border-radius:7px;font-size:0.85rem;"></div>
+            <div id="iaStatusMsg" style="display:none; padding:12px 16px; border-radius:var(--radius-md); font-size:0.85rem; font-weight:500;"></div>
         </div>
         <div class="modal-footer">
             <button class="btn-secondary" onclick="closeModal('modalIA')">Cancelar</button>
@@ -1396,13 +1508,17 @@ async function renderPresList() {
     list.innerHTML = '';
     all.forEach(p => {
         const item = document.createElement('div');
-        item.className = 'pres-list-item' + (currentPres?.id === p.id ? ' active' : '');
+        item.className = 'pres-item' + (currentPres?.id === p.id ? ' active' : '');
         item.innerHTML = `
-            <span class="pli-name">${p.name}</span>
-            <span class="pli-count">${p.slides?.length || 0} slides</span>
-            <button class="pli-btn" title="Editar" onclick="event.stopPropagation(); openEditorExistente('${p.id}')">✏️</button>
-            <button class="pli-btn" title="Exportar" onclick="event.stopPropagation(); exportarPresById('${p.id}')">⬇</button>
-            <button class="pli-btn" title="Eliminar" onclick="event.stopPropagation(); eliminarPres('${p.id}')">🗑</button>`;
+            <div class="pres-info">
+                <span class="pres-name">${p.name}</span>
+                <span class="pres-count">${p.slides?.length || 0} slides</span>
+            </div>
+            <div class="pres-actions">
+                <button class="action-btn" title="Editar" onclick="event.stopPropagation(); openEditorExistente('${p.id}')">✏️</button>
+                <button class="action-btn" title="Exportar" onclick="event.stopPropagation(); exportarPresById('${p.id}')">⬇️</button>
+                <button class="action-btn btn-delete" title="Eliminar" onclick="event.stopPropagation(); eliminarPres('${p.id}')">🗑️</button>
+            </div>`;
         item.onclick = () => loadPresentacion(p);
         list.appendChild(item);
     });
@@ -1524,8 +1640,11 @@ function renderEdSlideList() {
     el.innerHTML = '';
     edSlides.forEach((s, i) => {
         const item = document.createElement('div');
-        item.className = 'slide-list-item' + (i === edSelectedIdx ? ' active' : '');
-        item.innerHTML = `<span class="sli-num">${i+1}</span><span class="sli-title">${s.title || 'Sin título'}</span><button class="sli-del" onclick="event.stopPropagation();edDelSlide(${i})">✕</button>`;
+        item.className = 'slide-item' + (i === edSelectedIdx ? ' active' : '');
+        item.innerHTML = `
+            <span class="sli-num">${i+1}</span>
+            <span class="sli-title">${s.title || 'Sin título'}</span>
+            <button class="sli-del" title="Eliminar slide" onclick="event.stopPropagation();edDelSlide(${i})">✕</button>`;
         item.onclick = () => { edSaveCurrentForm(); edSelectedIdx = i; renderEdSlideList(); edShowSlideForm(i); };
         el.appendChild(item);
     });
@@ -1644,8 +1763,7 @@ function edShowSlideForm(idx) {
                     <div style="font-size:0.72rem;color:#aaa;margin-bottom:5px;">Layout</div>
                     <div class="layout-grid">
                         ${Object.entries(LAYOUT_DEFS).map(([key, def]) => `
-                            <div class="layout-card${(s.layout||'')=== key?' active':''}"
-                                 data-layout="${key}" onclick="edSetLayout('${key}')">
+                            <div class="layout-card${(s.layout||'')=== key?' active':''}" onclick="edSetLayout('${key}')">
                                 ${def.svg}
                                 <span>${def.name}</span>
                             </div>`).join('')}
@@ -1696,8 +1814,8 @@ function edShowSlideForm(idx) {
 
                 <!-- Color de fondo -->
                 <div>
-                    <div style="font-size:0.72rem;color:#aaa;margin-bottom:5px;">Fondo</div>
-                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;" id="colorSwatches">
+                    <div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Fondo</div>
+                    <div class="color-swatches" id="colorSwatches">
                         ${COLOR_PRESETS.map(c => {
                             const isActive = curBg === c.value;
                             return `<button class="color-swatch${isActive?' active':''}"
@@ -1707,16 +1825,17 @@ function edShowSlideForm(idx) {
                                 onclick="edSetBg(this.dataset.bg)"></button>`;
                         }).join('')}
                     </div>
-                    <div style="display:flex;gap:6px;align-items:center;">
-                        <input type="color" id="efBgPicker" value="${pickerVal}"
-                            style="width:36px;height:30px;padding:2px;cursor:pointer;border-radius:5px;border:1px solid #333;background:#0d0d1a;"
-                            oninput="document.getElementById('efBg').value=this.value;updateEdPreview();syncSwatches()">
-                        <input id="efBg" value="${escHtml(curBg)}"
-                            placeholder="#hex o gradient"
-                            style="flex:1;font-size:0.75rem;"
+                    <div class="color-input-group">
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="efBgPicker" value="${pickerVal}"
+                                oninput="document.getElementById('efBg').value=this.value;updateEdPreview();syncSwatches()">
+                        </div>
+                        <input id="efBg" value="${escHtml(curBg)}" placeholder="#hex o gradient"
+                            style="flex:1; font-size:0.8rem; padding:6px 10px; background:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--radius-md); color:var(--text-primary);"
                             oninput="syncColorPicker();updateEdPreview();syncSwatches()">
                     </div>
                 </div>
+
 
                 <!-- Cámara por slide -->
                 <div id="edCamSection">${edCamSectionHTML(idx)}</div>
@@ -1790,103 +1909,100 @@ function updateEdPreview() {
 
 function edElementsHTML(idx) {
     const s   = edSlides[idx];
-    const els = s?.elements || [];
+    if (!s) return '';
+    const els = s.elements || [];
+
+    const rng = (key, val, min, max, i, color, unit) => `
+        <div class="el-control-row">
+            <span class="el-lbl">${key === 'size' ? (edSlides[idx].elements[i].type === 'text' ? 'T' : 'W') : key.toUpperCase()}</span>
+            <input type="range" min="${min}" max="${max}" step="${unit === 'vw' ? 0.25 : 1}" value="${val}"
+                style="flex:1; accent-color:${color || 'var(--airbnb-red)'};"
+                onpointerdown="edSnapshot()"
+                oninput="edUpdateEl(${idx},${i},'${key}',+this.value);this.nextElementSibling.textContent=this.value+'${unit || '%'}'">
+            <span class="el-val">${val}${unit || '%'}</span>
+        </div>`;
 
     const elCards = els.map((el, i) => {
         const isText = el.type === 'text';
-        const activeStyle = (active) =>
-            active ? 'border:1px solid #00d4ff;background:#00d4ff15;color:#00d4ff;'
-                   : 'border:1px solid #2a2a40;background:#0d0d1a;color:#666;';
-
-        const styleRow = isText ? `
-            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:2px;">
-                <input type="color" value="${el.color||'#ffffff'}"
-                    style="width:24px;height:22px;padding:1px;cursor:pointer;border-radius:3px;border:1px solid #333;background:#0d0d1a;flex-shrink:0;"
-                    oninput="edUpdateEl(${idx},${i},'color',this.value)">
-                <button onclick="edUpdateEl(${idx},${i},'bold',!edSlides[${idx}].elements[${i}].bold)"
-                    style="padding:2px 7px;border-radius:4px;font-weight:700;font-size:0.75rem;cursor:pointer;${activeStyle(el.bold)}">B</button>
-                <button onclick="edUpdateEl(${idx},${i},'italic',!edSlides[${idx}].elements[${i}].italic)"
-                    style="padding:2px 7px;border-radius:4px;font-style:italic;font-size:0.75rem;cursor:pointer;${activeStyle(el.italic)}">I</button>
-                <select onchange="edUpdateEl(${idx},${i},'align',this.value)"
-                    style="padding:2px 4px;font-size:0.7rem;background:#0d0d1a;border:1px solid #2a2a40;border-radius:4px;color:#ccc;">
-                    <option value="left"${(el.align||'left')==='left'?' selected':''}>← Izq</option>
-                    <option value="center"${el.align==='center'?' selected':''}>↔ Centro</option>
-                    <option value="right"${el.align==='right'?' selected':''}>→ Der</option>
-                </select>
-            </div>` : `
-            <div style="display:flex;gap:4px;align-items:center;margin-top:2px;">
-                <span class="el-lbl">Ajuste:</span>
-                <button onclick="edUpdateEl(${idx},${i},'fit','contain')"
-                    style="padding:2px 8px;border-radius:4px;font-size:0.7rem;cursor:pointer;${activeStyle((el.fit||'contain')==='contain')}">Contener</button>
-                <button onclick="edUpdateEl(${idx},${i},'fit','cover')"
-                    style="padding:2px 8px;border-radius:4px;font-size:0.7rem;cursor:pointer;${activeStyle(el.fit==='cover')}">Rellenar</button>
-            </div>`;
-
-        const rng = (key, val, min, max, color, unit) =>
-            `<input type="range" min="${min}" max="${max}" step="${unit==='vw'?0.25:1}" value="${val}"
-                style="flex:1;accent-color:${color};cursor:pointer;height:4px;"
-                onpointerdown="edSnapshot()"
-                oninput="edUpdateEl(${idx},${i},'${key}',+this.value);this.nextElementSibling.textContent=this.value+'${unit||'%'}'">
-            <span style="font-size:0.68rem;color:#aaa;min-width:36px;text-align:right;">${val}${unit||'%'}</span>`;
-
-        const sizeRange = isText
-            ? rng('size', el.fontSize??2.5, 0.5, 15, '#7b2ff7', 'vw')
-            : rng('size', el.w??30, 5, 100, '#7b2ff7');
-
         const total = els.length;
-        return `<div class="el-card">
-            <div style="display:flex;align-items:center;gap:4px;">
-                <button class="el-type-btn${isText?' active':''}" onclick="edChangeElType(${idx},${i},'text')">T Texto</button>
-                <button class="el-type-btn${!isText?' active':''}" onclick="edChangeElType(${idx},${i},'image')">🖼 Imagen</button>
-                <span style="margin-left:auto;display:flex;gap:2px;align-items:center;">
-                    <button onclick="edMoveEl(${idx},${i},-1)" ${i===0?'disabled':''} title="Subir (menor z-index)"
-                        style="padding:2px 6px;border:1px solid #2a2a40;border-radius:4px;background:#0d0d1a;color:${i===0?'#333':'#aaa'};font-size:0.7rem;cursor:${i===0?'default':'pointer'};">▲</button>
-                    <span style="font-size:0.65rem;color:#444;min-width:14px;text-align:center;">${i+1}</span>
-                    <button onclick="edMoveEl(${idx},${i},1)" ${i===total-1?'disabled':''} title="Bajar (mayor z-index)"
-                        style="padding:2px 6px;border:1px solid #2a2a40;border-radius:4px;background:#0d0d1a;color:${i===total-1?'#333':'#aaa'};font-size:0.7rem;cursor:${i===total-1?'default':'pointer'};">▼</button>
-                    <button onclick="edDelElement(${idx},${i})"
-                        style="padding:2px 8px;border:1px solid #3a1a1a;border-radius:4px;background:#1a0a0a;color:#e74c3c;font-size:0.72rem;cursor:pointer;margin-left:2px;">✕</button>
-                </span>
+
+        return `
+        <div class="el-card">
+            <div class="el-card-header">
+                <div class="el-type-group">
+                    <button class="el-type-btn${isText ? ' active' : ''}" onclick="edChangeElType(${idx},${i},'text')">Texto</button>
+                    <button class="el-type-btn${!isText ? ' active' : ''}" onclick="edChangeElType(${idx},${i},'image')">Imagen</button>
+                </div>
+                <div style="margin-left:auto; display:flex; gap:4px; align-items:center;">
+                    <button onclick="edMoveEl(${idx},${i},-1)" ${i === 0 ? 'disabled' : ''} title="Subir" class="action-btn" style="width:24px; height:24px; font-size:0.7rem;">▲</button>
+                    <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); min-width:14px; text-align:center;">${i + 1}</span>
+                    <button onclick="edMoveEl(${idx},${i},1)" ${i === total - 1 ? 'disabled' : ''} title="Bajar" class="action-btn" style="width:24px; height:24px; font-size:0.7rem;">▼</button>
+                    <button onclick="edDelElement(${idx},${i})" title="Eliminar" class="action-btn btn-delete" style="width:24px; height:24px; font-size:0.7rem; margin-left:4px;">✕</button>
+                </div>
             </div>
-            <input value="${escHtml(el.content||'')}" placeholder="${isText?'Texto del elemento…':'URL de imagen…'}"
-                style="width:100%;padding:4px 7px;font-size:0.75rem;background:#0d0d1a;border:1px solid #2a2a40;border-radius:4px;color:#ccc;"
+
+            <input value="${escHtml(el.content || '')}" 
+                placeholder="${isText ? 'Texto del elemento…' : 'URL de imagen…'}" 
+                style="width:100%; padding:8px 10px; font-size:0.8rem; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius-sm); color:var(--text-primary);" 
                 oninput="edUpdateEl(${idx},${i},'content',this.value)">
-            <div style="display:flex;align-items:center;gap:6px;">
-                <span class="el-lbl" style="width:10px;">X</span>
-                ${rng('x', el.x??10, 0, 95, '#00d4ff')}
+
+            ${rng('x', el.x ?? 10, 0, 100, i, '#00d4ff')}
+            ${rng('y', el.y ?? 10, 0, 100, i, '#00d4ff')}
+            ${isText 
+                ? rng('size', el.fontSize ?? 2.5, 0.5, 15, i, 'var(--airbnb-red)', 'vw')
+                : rng('size', el.w ?? 50, 5, 100, i, '#00d4ff')}
+
+            ${isText ? `
+            <div class="el-style-bar">
+                <input type="color" value="${el.color || '#ffffff'}" 
+                    style="width:28px; height:28px; padding:2px; cursor:pointer; border-radius:var(--radius-sm); border:1px solid var(--border-color); background:var(--bg-secondary);" 
+                    oninput="edUpdateEl(${idx},${i},'color',this.value)">
+                <button onclick="edUpdateEl(${idx},${i},'bold',!edSlides[${idx}].elements[${i}].bold)" 
+                    class="style-btn${el.bold ? ' active' : ''}" title="Negrita">B</button>
+                <button onclick="edUpdateEl(${idx},${i},'italic',!edSlides[${idx}].elements[${i}].italic)" 
+                    class="style-btn${el.italic ? ' active' : ''}" title="Cursiva">I</button>
+                <select onchange="edUpdateEl(${idx},${i},'align',this.value)" 
+                    style="flex:1; padding:4px 6px; font-size:0.75rem; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius-sm); color:var(--text-primary);">
+                    <option value="left" ${el.align === 'left' ? 'selected' : ''}>Izquierda</option>
+                    <option value="center" ${el.align === 'center' ? 'selected' : ''}>Centro</option>
+                    <option value="right" ${el.align === 'right' ? 'selected' : ''}>Derecha</option>
+                </select>
             </div>
-            <div style="display:flex;align-items:center;gap:6px;">
-                <span class="el-lbl" style="width:10px;">Y</span>
-                ${rng('y', el.y??10, 0, 95, '#00d4ff')}
+            ` : `
+            <div class="el-style-bar">
+                <span style="font-size:0.7rem; color:var(--text-muted); margin-right:4px;">Ajuste:</span>
+                <select onchange="edUpdateEl(${idx},${i},'fit',this.value)" 
+                    style="flex:1; padding:4px 6px; font-size:0.75rem; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius-sm); color:var(--text-primary);">
+                    <option value="contain" ${(el.fit || 'contain') === 'contain' ? 'selected' : ''}>Contener</option>
+                    <option value="cover" ${el.fit === 'cover' ? 'selected' : ''}>Cubrir</option>
+                </select>
             </div>
-            <div style="display:flex;align-items:center;gap:6px;">
-                <span class="el-lbl" style="width:10px;">${isText?'T':'⊡'}</span>
-                ${sizeRange}
-            </div>
-            ${styleRow}
+            `}
         </div>`;
     }).join('');
 
     const layoutHidden = !!s?.layoutHidden;
+
     return `
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
-            <span style="font-size:0.72rem;color:#aaa;">Elementos (${els.length})${layoutHidden?' · <span style="color:#00d4ff;">layout libre</span>':''}</span>
-            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+    <div id="edElementsSection">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Elementos (${els.length})</span>
+                ${layoutHidden ? '<span style="font-size:0.65rem; padding:2px 6px; background:rgba(0,212,255,0.1); color:#00d4ff; border-radius:10px; font-weight:700;">LAYOUT LIBRE</span>' : ''}
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
                 ${layoutHidden
-                    ? `<button onclick="edRestoreLayout(${idx})"
-                        style="padding:3px 9px;border:1px solid #2a4a2a;border-radius:4px;background:#0a1a0a;color:#2ecc71;font-size:0.7rem;cursor:pointer;">↩ Restaurar layout</button>`
-                    : `<button onclick="edConvertLayoutToElements(${idx})"
-                        style="padding:3px 9px;border:1px solid #3a2a50;border-radius:4px;background:#1a0a2e;color:#a78bfa;font-size:0.7rem;cursor:pointer;">📐 Ajustar layout</button>`
+                    ? `<button class="btn-outline" style="padding:4px 10px; font-size:0.7rem; color:#2ecc71; border-color:rgba(46,204,113,0.3);" onclick="edRestoreLayout(${idx})">↩ Restaurar layout</button>`
+                    : `<button class="btn-outline" style="padding:4px 10px; font-size:0.7rem;" onclick="edConvertLayoutToElements(${idx})">📐 Ajustar layout</button>`
                 }
-                <button onclick="edAddElement(${idx},'text')"
-                    style="padding:3px 9px;border:1px solid #2a2a40;border-radius:4px;background:#0d0d1a;color:#aaa;font-size:0.7rem;cursor:pointer;">+ Texto</button>
-                <button onclick="edAddElement(${idx},'image')"
-                    style="padding:3px 9px;border:1px solid #2a2a40;border-radius:4px;background:#0d0d1a;color:#aaa;font-size:0.7rem;cursor:pointer;">+ Imagen</button>
+                <button class="btn-outline" style="padding:4px 10px; font-size:0.7rem;" onclick="edAddElement(${idx},'text')">+ Texto</button>
+                <button class="btn-outline" style="padding:4px 10px; font-size:0.7rem;" onclick="edAddElement(${idx},'image')">+ Imagen</button>
             </div>
         </div>
         <div id="edElList">
-            ${elCards || '<div style="color:#444;font-size:0.72rem;padding:2px 0;">Sin elementos adicionales</div>'}
-        </div>`;
+            ${elCards || '<div style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:20px; border:1px dashed var(--border-color); border-radius:var(--radius-md);">Sin elementos adicionales</div>'}
+        </div>
+    </div>`;
 }
 
 function edConvertLayoutToElements(idx) {
@@ -2023,11 +2139,11 @@ function edCamSectionHTML(idx) {
     const s   = edSlides[idx];
     const cfg = s?.camConfig;
     if (!cfg) {
-        return `<div style="color:#666;font-size:0.75rem;padding:6px 0;">📷 Sin config de cámara guardada
-            <button onclick="edSetCamSlide(${idx},'init',true)"
-                style="margin-left:8px;padding:3px 8px;border:1px solid #2a2a40;border-radius:4px;
-                    background:#0d0d1a;color:#aaa;font-size:0.72rem;cursor:pointer;">
-                + Agregar config
+        return `
+        <div style="padding:12px; border:1px dashed var(--border-color); border-radius:var(--radius-md); text-align:center;">
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">📷 Sin configuración de cámara</div>
+            <button class="btn-outline" style="width:100%; justify-content:center; font-size:0.72rem; padding:8px;" onclick="edSetCamSlide(${idx},'init',true)">
+                + Agregar cámara por slide
             </button>
         </div>`;
     }
@@ -2036,41 +2152,50 @@ function edCamSectionHTML(idx) {
     const sz= cfg.size  ?? 22;
     const mi= cfg.mirror ?? true;
 
-    const posBtn = (pos, label) =>
-        `<button onclick="edSetCamSlide(${idx},'pos','${pos}')"
-            style="flex:1;padding:5px 3px;border:1px solid ${p===pos?'#00d4ff':'#2a2a40'};border-radius:5px;
-                background:${p===pos?'#00d4ff15':'#0d0d1a'};color:${p===pos?'#00d4ff':'#666'};
-                font-size:0.7rem;cursor:pointer;">${label}</button>`;
+    const posBtn = (pos, label) => `
+        <button onclick="edSetCamSlide(${idx},'pos','${pos}')" 
+            class="action-btn${p===pos?' active':''}" 
+            style="flex:1; width:auto; height:32px; border-radius:var(--radius-sm); font-size:0.75rem; font-weight:600;">
+            ${label}
+        </button>`;
 
-    const shBtn = (shape, label) =>
-        `<button onclick="edSetCamSlide(${idx},'shape','${shape}')"
-            style="flex:1;padding:5px 3px;border:1px solid ${sh===shape?'#00d4ff':'#2a2a40'};border-radius:5px;
-                background:${sh===shape?'#00d4ff15':'#0d0d1a'};color:${sh===shape?'#00d4ff':'#666'};
-                font-size:0.7rem;cursor:pointer;">${label}</button>`;
+    const shBtn = (shape, label) => `
+        <button onclick="edSetCamSlide(${idx},'shape','${shape}')" 
+            class="action-btn${sh===shape?' active':''}" 
+            style="flex:1; width:auto; height:32px; border-radius:var(--radius-sm); font-size:0.75rem; font-weight:600;">
+            ${label}
+        </button>`;
 
     return `
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:5px;">
-            ${posBtn('tl','↖')}${posBtn('center','⊙ Centro')}${posBtn('tr','↗')}
-            ${posBtn('bl','↙')}${posBtn('full','⛶ Pantalla')}${posBtn('br','↘')}
-        </div>
-        <div style="display:flex;gap:4px;margin-bottom:5px;">
-            ${shBtn('rect','▭ Rect')}${shBtn('circle','◉ Círculo')}
-            <button onclick="edSetCamSlide(${idx},'mirror',${!mi})"
-                style="flex:1;padding:5px 3px;border:1px solid ${mi?'#00d4ff':'#2a2a40'};border-radius:5px;
-                    background:${mi?'#00d4ff15':'#0d0d1a'};color:${mi?'#00d4ff':'#666'};
-                    font-size:0.7rem;cursor:pointer;">⇔ Espejo</button>
-        </div>
-        <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">
-            <input type="range" min="10" max="60" value="${sz}"
-                style="flex:1;accent-color:#00d4ff;cursor:pointer;"
-                oninput="edSetCamSlide(${idx},'size',+this.value)">
-            <span id="edCamSizeLabel${idx}" style="font-size:0.75rem;color:#aaa;min-width:32px;">${sz}%</span>
-        </div>
-        <button onclick="edClearCamSlide(${idx})"
-            style="width:100%;padding:4px;border:1px solid #3a1a1a;border-radius:5px;
-                background:#1a0a0a;color:#e74c3c;font-size:0.72rem;cursor:pointer;">
-            🗑 Quitar config de cámara
-        </button>`;
+        <div style="display:flex; flex-direction:column; gap:10px; background:var(--bg-secondary); padding:10px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+            <div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Posición</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
+                ${posBtn('tl','↖')}${posBtn('center','⊙')}${posBtn('tr','↗')}
+                ${posBtn('bl','↙')}${posBtn('full','⛶')}${posBtn('br','↘')}
+            </div>
+            
+            <div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Forma y Estilo</div>
+            <div style="display:flex; gap:6px;">
+                ${shBtn('rect','▭')}${shBtn('circle','◉')}
+                <button onclick="edSetCamSlide(${idx},'mirror',${!mi})" 
+                    class="action-btn${mi?' active':''}" 
+                    style="flex:1; width:auto; height:32px; border-radius:var(--radius-sm); font-size:0.75rem; font-weight:600;">
+                    ⇔ Espejo
+                </button>
+            </div>
+            
+            <div class="el-control-row">
+                <span class="el-lbl">S</span>
+                <input type="range" min="10" max="60" value="${sz}" 
+                    style="flex:1; accent-color:var(--airbnb-red);" 
+                    oninput="edSetCamSlide(${idx},'size',+this.value)">
+                <span class="el-val">${sz}%</span>
+            </div>
+            
+            <button class="action-btn btn-delete" style="width:100%; height:32px; border-radius:var(--radius-sm); font-size:0.72rem; font-weight:600;" onclick="edClearCamSlide(${idx})">
+                🗑 Quitar cámara
+            </button>
+        </div>`;
 }
 
 function edSetCamSlide(idx, key, value) {
