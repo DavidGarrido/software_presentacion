@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Proyector - Censo DANE 2018</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#000; overflow:hidden; }
+        iframe { width:100vw; height:100vh; border:none; display:block; }
+    </style>
+</head>
+<body>
+    <iframe id="frame"></iframe>
+    <script>
+        // Cargar presentación desde parámetro URL
+        const params = new URLSearchParams(window.location.search);
+        const src = params.get('src') || 'PRESENTACION_CENSO.html';
+        document.getElementById('frame').src = src;
+
+        window.addEventListener('message', e => {
+            const frame = document.getElementById('frame');
+            if (!frame.contentWindow) return;
+            if (e.data.action === 'next') frame.contentWindow.nextSlide();
+            if (e.data.action === 'prev') frame.contentWindow.prevSlide();
+            if (e.data.action === 'goto') frame.contentWindow.showSlide(e.data.index);
+            if (e.data.action === 'src')  frame.src = e.data.src;
+        });
+    </script>
+</body>
+</html>

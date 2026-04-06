@@ -1,0 +1,52 @@
+{
+  "id": "mngdzjg5wnjngsdh3da",
+  "name": "El Vallenato: Corazón de Colombia",
+  "slides": [
+    {
+      "title": "El Vallenato",
+      "content": "El ritmo que late en el corazón de Colombia",
+      "tag": "PATRIMONIO CULTURAL",
+      "bg": "linear-gradient(145deg, #1a0a0a, #5a1a1a)",
+      "notes": "Buenos días a todos. Hoy vamos a explorar uno de los géneros musicales más representativos de Colombia: el vallenato. Este ritmo, declarado Patrimonio Cultural Inmaterial de la Humanidad por la UNESCO, nació en la región caribeña y ha conquistado corazones en todo el mundo. Acompáñenme en este viaje por su historia, sus instrumentos y sus artistas más emblemáticos.",
+      "layout": ""
+    },
+    {
+      "title": "Instrumentos Esenciales",
+      "content": "https://images.unsplash.com/photo-1511379938547-c1f69419868d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
+      "tag": "SONIDO CARACTERÍSTICO",
+      "bg": "linear-gradient(145deg, #2a1a0a, #5a3a1a)",
+      "notes": "El sonido único del vallenato se construye sobre tres pilares fundamentales. Primero, el acordeón, traído de Europa pero adoptado con pasión en nuestra tierra. Segundo, la caja vallenata, un tambor que marca el ritmo con fuerza y cadencia. Y tercero, la guacharaca, ese instrumento de raspado que aporta la textura rítmica característica. Juntos crean una magia sonora inconfundible.",
+      "layout": ""
+    },
+    {
+      "title": "Artistas Legendarios",
+      "content": "||Rafael Escalona|| y su legado narrativo\nEl inmortal ||Diomedes Díaz||\nCarlos Vives y la fusión moderna",
+      "tag": "LEYENDAS MUSICALES",
+      "bg": "linear-gradient(145deg, #0a1a2a, #1a3a5a)",
+      "notes": "El vallenato ha sido moldeado por figuras extraordinarias. Rafael Escalona, el compositor cuyas canciones son crónicas poéticas de la vida costeña. Diomedes Díaz, 'El Cacique de la Junta', cuya voz y carisma lo convirtieron en un ícono popular. Y Carlos Vives, quien en los 90 revolucionó el género fusionándolo con pop y rock, llevando el vallenato a audiencias globales. Cada uno dejó una huella imborrable."
+    },
+    {
+      "title": "Escena Contemporánea",
+      "content": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
+      "tag": "EVOLUCIÓN ACTUAL",
+      "bg": "linear-gradient(145deg, #1a0a2a, #3a1a5a)",
+      "notes": "Hoy el vallenato sigue vivo y en evolución. Artistas como Silvestre Dangond, con su estilo fresco y carismático, dominan las listas de popularidad. Jorge Celedón mantiene viva la tradición con elegancia. Y grupos como Binomio de Oro de América continúan siendo referentes. Además, nuevas fusiones con reguetón, urbano y otros géneros demuestran la adaptabilidad de este ritmo, asegurando su relevancia para las nuevas generaciones."
+    },
+    {
+      "title": "Un Legado que Perdura",
+      "content": "El vallenato es más que música, es identidad",
+      "tag": "CORAZÓN COLOMBIANO",
+      "bg": "linear-gradient(145deg, #0a1a0a, #1a5a1a)",
+      "notes": "Para concluir, el vallenato trasciende lo musical para convertirse en un símbolo de identidad colombiana. Es la voz de nuestras historias, amores, paisajes y tradiciones. Un género que ha sabido conservar su esencia mientras se reinventa. Los invito a seguir explorando este maravilloso universo sonoro, porque, como dice la canción, 'el vallenato es un sentimiento'. Muchas gracias por su atención."
+    },
+    {
+      "layout": "image",
+      "bg": "#0d0d1a",
+      "tag": "",
+      "title": "Título con imagen",
+      "content": "https://images.unsplash.com/photo-1511379938547-c1f69419868d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
+      "notes": "Describe la imagen para el público."
+    }
+  ],
+  "updatedAt": "2026-04-01T18:37:34.399Z"
+}

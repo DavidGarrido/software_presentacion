@@ -2,10 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=PRESENTACION_PRESENTADOR.html">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Presentador</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0d0d1a; color: #aaa;
+               display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    </style>
 </head>
 <body>
-    <a href="PRESENTACION_PRESENTADOR.html">Ir al presentador →</a>
+    <script>
+        const isMobile = window.matchMedia('(pointer: coarse)').matches
+                      && window.innerWidth < 900;
+        window.location.replace(isMobile ? 'celular.html' : 'PRESENTACION_PRESENTADOR.html');
+    </script>
+    <!-- Fallback si JS está desactivado -->
+    <p>
+        <a href="PRESENTACION_PRESENTADOR.html">Escritorio</a> |
+        <a href="celular.html">Móvil</a>
+    </p>
 </body>
 </html>
