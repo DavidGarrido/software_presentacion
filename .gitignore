@@ -24,3 +24,14 @@ Thumbs.db
 
 # Documentos internos del proyecto original
 enlaces_dane/
+# Plantillas y JSONs con caracteres especiales (ignorar en Git)
+El_Vallenato__Coraz_n_de_Colombia.json
+La_Revoluci_n_IA__De_Hoy_al_Futuro.json
+La_Revoluci_n_de_la_IA__De_los_Avances_Actuales_al_Futuro_Exponencial.json
+Testimonio_Bel_n.json
+PRESENTACION_BELEN.html
+PRESENTACION_CENSO.html
+PRESENTACION_INGLES.html
+slides_belen.json
+slides_censo.json
+slides_ingles.json
