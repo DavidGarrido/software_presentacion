@@ -4,68 +4,116 @@
   "slides": [
     {
       "title": "Bienvenido a tu herramienta de presentaciones",
-      "content": "Crea, edita y graba presentaciones directamente en el navegador\nSin instalaciones · Sin servidor · Todo se guarda localmente",
+      "content": "Crea, edita y graba presentaciones directamente en el navegador\nSin instalaciones · Sin servidor · Todo se guarda localmente\nCompatible con redes sociales: TikTok, Reels, Shorts, Instagram",
       "tag": "Tutorial",
       "layout": "cover",
       "bg": "linear-gradient(135deg, #0d0d1a 0%, #0f3460 100%)"
     },
     {
       "title": "¿Cómo funciona?",
-      "content": "Tus presentaciones se guardan en tu navegador (IndexedDB)\nNo necesitas cuenta ni servidor\nPuedes exportar e importar como archivos JSON\nFunciona sin conexión a internet",
+      "content": "Las presentaciones se guardan en tu navegador (IndexedDB)\nNo necesitas cuenta ni servidor\nExporta e importa como archivos JSON\nFunciona sin conexión a internet\nAl recargar la página retoma la última presentación usada",
       "tag": "Concepto",
       "bg": "#0d0d1a"
     },
     {
       "title": "Crear una presentación",
-      "content": "Haz clic en '+ Nueva' en el panel izquierdo\nEscribe el nombre de la presentación\nAgrega slides con el botón '+ Slide'\nCada slide tiene: Título, Contenido y Guión (notas del presentador)",
+      "content": "Haz clic en '+ Nueva' en el panel izquierdo\nEscribe el nombre de la presentación\nAgrega slides con el botón '+ Slide'\nCada slide tiene: Título · Contenido · Guión (notas privadas) · Tag · Fondo",
       "tag": "Paso 1",
       "bg": "#0d0d1a"
     },
     {
-      "title": "Editar slides",
-      "content": "Título: el encabezado principal del slide\nContenido: cada línea se muestra como un punto\nGuión: solo lo ve el presentador, no aparece en pantalla\nLayouts disponibles: cover · bullets · highlight · image",
-      "tag": "Paso 2",
+      "title": "Editor de slides",
+      "content": "4 layouts: cover · bullets · highlight · image\nColor de fondo: 12 presets (sólidos y degradados) + color picker libre\nPreview en vivo mientras editas\nPlantillas de slide: portada, bullets, destacado, imagen, cierre, en blanco",
+      "tag": "Editor",
       "bg": "#0d0d1a"
     },
     {
-      "title": "Navegar durante la presentación",
-      "content": "Flechas ← → del teclado para avanzar o retroceder\nHaz clic en las miniaturas del panel izquierdo para saltar a un slide\nAbre el proyector en ventana separada para pantalla completa\nEl proyector se sincroniza automáticamente",
-      "tag": "Paso 3",
+      "title": "Elementos libres por slide",
+      "content": "Agrega texto o imágenes posicionados libremente sobre el slide\nControla posición X·Y y tamaño con sliders\nTexto: color, tamaño, negrita, cursiva, alineación\nImagen: ajuste contain/cover\nEl orden en la lista define el z-index (primero = más atrás)\nBotones ▲ ▼ para reordenar · ↩ Restaurar layout base",
+      "tag": "Elementos",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Historial de cambios",
+      "content": "Deshacer hasta 20 pasos con Ctrl+Z o botón ↩\nRehacer con Ctrl+Y o botón ↪\nEl contador en el header muestra tu posición en el historial\nSnapshot automático antes de cada operación estructural",
+      "tag": "Undo / Redo",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Plantillas visuales",
+      "content": "11 plantillas disponibles con estilos distintos:\nClásico · Corporativo · Moderno · Elegante · Neón · Bold · Minimalista\nTecnológico · Institucional · Educativo · Deportivo\nSe aplican desde el editor · Preview CSS en el selector\nLa plantilla se guarda con la presentación",
+      "tag": "Plantillas",
+      "bg": "linear-gradient(135deg, #0d0d1a 0%, #1a0a2e 100%)"
+    },
+    {
+      "title": "Generar presentación con IA",
+      "content": "Botón '✨ Generar con IA' en el editor\nProveedores: Google Gemini (gratuito) · DeepSeek · OpenAI\nLa IA genera slides con título, contenido, layout, color y notas\nAPI key se guarda en el navegador para usos futuros\nEl viewer generado incluye partículas y navegación por dots",
+      "tag": "IA",
+      "bg": "linear-gradient(135deg, #0d0d1a 0%, #0f3460 100%)"
+    },
+    {
+      "title": "Modo claro / oscuro",
+      "content": "Botón de tema en la barra superior derecha\nAlterna entre modo claro y oscuro\nLa preferencia se guarda en localStorage\nAplica al presentador y al editor",
+      "tag": "Tema",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Elegir formato de salida",
+      "content": "Sobre los controles de navegación hay 4 formatos:\n📺 16:9 — Proyector / pantalla ancha (por defecto)\n📱 9:16 — TikTok · Instagram Reels · YouTube Shorts\n⬜ 1:1 — Instagram Post\n🖼 4:5 — Instagram Portrait\nEl formato define las proporciones exactas de la ventana del proyector",
+      "tag": "Formatos",
+      "bg": "linear-gradient(135deg, #0d0d1a 0%, #1a0a2e 100%)"
+    },
+    {
+      "title": "Proyector en escritorio",
+      "content": "Haz clic en '📺 Proyector' para abrir la ventana flotante\nLa ventana tiene las proporciones exactas del formato elegido\nEl título muestra '▶ Nombre de la presentación' para identificarla fácilmente\nDoble clic en el proyector (o tecla F) para pantalla completa\nSe sincroniza automáticamente al navegar slides",
+      "tag": "Proyector",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Captura móvil (formatos sociales)",
+      "content": "En móvil con formato 9:16, 1:1 o 4:5 el botón cambia a '📱 Capturar'\nSe abre un overlay de pantalla completa con la presentación\nLa presentación queda encuadrada en el formato elegido\nGraba tu pantalla desde el celular para publicar en redes\nToca ✕ para salir del modo captura",
+      "tag": "Móvil",
+      "bg": "#0d0d1a"
+    },
+    {
+      "title": "Cámara del presentador",
+      "content": "Activa la cámara desde el panel derecho\nElige posición: esquina superior/inferior izquierda o derecha · centro · pantalla completa\nForma: rectángulo o círculo\nTamaño ajustable con slider\nEspejo para selfie-cam\nVisible en el preview central · oculta en miniaturas",
+      "tag": "Cámara",
       "bg": "#0d0d1a"
     },
     {
       "title": "Grabar con el navegador",
-      "content": "Haz clic en 'Grabar' → selecciona el modo 'Navegador'\nEl sistema pedirá permiso de micrófono y compartir pantalla\nSelecciona la ventana del proyector cuando el sistema lo pida\nLa grabación se guarda automáticamente al terminar",
+      "content": "Haz clic en '⏺ Grabar' en el panel derecho\nEl sistema pide permiso de micrófono y compartir pantalla\nEn el selector elige la pestaña '▶ Nombre de la presentación'\nLa ventana tiene +60px extra que compensan la barra de Chrome\nCalidad: 1080p · 720p · 480p con sync A/V garantizada\nLa grabación se descarga como .webm al terminar",
       "tag": "Grabación",
       "bg": "linear-gradient(135deg, #0d0d1a 0%, #1a0a2e 100%)"
     },
     {
       "title": "Grabar con OBS (opcional)",
-      "content": "Abre OBS y habilita el servidor WebSocket (Herramientas → Servidor WebSocket)\nEn el panel OBS ingresa el puerto y contraseña\nHaz clic en 'Conectar' y luego 'Iniciar Grabación'\nOBS captura con mayor calidad y control de escenas",
-      "tag": "Grabación con OBS",
+      "content": "Abre OBS → Herramientas → Servidor WebSocket\nIngresa el puerto y contraseña en el panel OBS del presentador\nHaz clic en 'Conectar' → 'Iniciar Grabación'\nOBS captura con mayor calidad y control de escenas",
+      "tag": "OBS",
       "bg": "#0d0d1a"
     },
     {
       "title": "Control de música con pear-desktop",
-      "content": "Instala pear-desktop en tu PC para control de música\nEl reproductor se controla automáticamente al iniciar y detener grabación\nPlay al iniciar · Pausa al terminar\nEs completamente opcional",
+      "content": "Instala pear-desktop en tu PC\nEl reproductor se controla automáticamente:\nPlay al iniciar grabación · Pausa al terminar\nEs completamente opcional",
       "tag": "Complemento",
       "bg": "#0d0d1a"
     },
     {
       "title": "Tus grabaciones",
-      "content": "Las grabaciones se guardan en el navegador (IndexedDB)\nAccede a ellas desde el botón '🎬 Grabaciones'\nPuedes reproducirlas o descargarlas como archivo .webm\nCompatibles con reproductores de video y editores",
+      "content": "Se guardan en IndexedDB (navegador) con escritura directa a disco vía OPFS\nSin acumulación en RAM durante la grabación\nAccede desde el botón '🎬 Grabaciones'\nReproduce o descarga como archivo .webm",
       "tag": "Grabaciones",
       "bg": "#0d0d1a"
     },
     {
       "title": "Exportar e importar",
-      "content": "Exporta cualquier presentación como archivo JSON\nCompartela con otros usuarios\nImporta JSONs para cargar presentaciones de otras personas\nEl formato es abierto y editable con cualquier editor de texto",
+      "content": "Exporta cualquier presentación como archivo JSON\nCompartela con otros usuarios\nImporta JSONs para cargar presentaciones externas\nEl nombre de la presentación se toma del archivo si no viene definido",
       "tag": "Compartir",
       "bg": "#0d0d1a"
     },
     {
       "title": "¡Listo para empezar!",
-      "content": "Haz clic en '+ Nueva' para crear tu primera presentación\nEsta presentación tutorial siempre estará disponible\nCualquier pregunta: consulta el README en GitHub",
+      "content": "Haz clic en '+ Nueva' para crear tu primera presentación\nElige el formato según dónde vas a publicar\nUsa IA para generar slides en segundos\nEsta presentación tutorial siempre estará disponible",
       "tag": "¡A presentar!",
       "layout": "highlight",
       "bg": "linear-gradient(135deg, #0d0d1a 0%, #0f3460 100%)"

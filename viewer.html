@@ -9,6 +9,19 @@
         html, body { width:100%; height:100%; overflow:hidden; background:#0d0d1a; }
         #root { width:100%; height:100%; overflow:hidden; }
 
+        /* ── Letterbox para formatos sociales ── */
+        body.letterbox {
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        body.letterbox #root {
+            position: relative;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
         .slide {
             width:100%; height:100%;
             display:flex; flex-direction:column;
@@ -121,10 +134,31 @@
         /* Slide de portada */
         .cover h1 { font-size:clamp(2rem, 7vw, 5rem); }
         .cover .subtitle { font-size:clamp(1rem, 2.5vw, 1.7rem); }
+
+        /* Hint de fullscreen */
+        #fsHint {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.55);
+            color: rgba(255,255,255,0.7);
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.72rem;
+            padding: 6px 14px;
+            border-radius: 20px;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            z-index: 200;
+            white-space: nowrap;
+        }
+        #fsHint.hidden { opacity: 0; }
+        body.fs-active #fsHint { display: none; }
     </style>
 </head>
 <body>
 <div id="root"></div>
+<div id="fsHint">Doble clic · pantalla completa para grabar sin bordes</div>
 <div id="camWrap" style="display:none;width:0;height:0;overflow:hidden;">
     <video id="camFeed" autoplay muted playsinline style="display:block;width:0;height:0;"></video>
 </div>
@@ -375,7 +409,54 @@
     document.addEventListener('keydown', e => {
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') nextSlide();
         if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    prevSlide();
+        if (e.key === 'f' || e.key === 'F') toggleFullscreen();
     });
+
+    // ── Pantalla completa ────────────────────────────────────────────────────
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+            document.exitFullscreen().catch(() => {});
+        }
+    }
+
+    document.addEventListener('dblclick', toggleFullscreen);
+
+    document.addEventListener('fullscreenchange', () => {
+        document.body.classList.toggle('fs-active', !!document.fullscreenElement);
+    });
+
+    // Ocultar hint a los 4 segundos
+    setTimeout(() => {
+        const hint = document.getElementById('fsHint');
+        if (hint) hint.classList.add('hidden');
+    }, 4000);
+
+    // ── Letterbox para formatos sociales ────────────────────────────────────
+    (function applyLetterbox() {
+        const params  = new URLSearchParams(window.location.search);
+        const formato = params.get('formato');
+        if (!formato || formato === '16:9') return;
+
+        const [rw, rh] = formato.split(':').map(Number);
+        const root = document.getElementById('root');
+        document.body.classList.add('letterbox');
+
+        function resize() {
+            const vw = window.innerWidth, vh = window.innerHeight;
+            let w, h;
+            if (vw / vh > rw / rh) {
+                h = vh; w = Math.round(vh * rw / rh);
+            } else {
+                w = vw; h = Math.round(vw * rh / rw);
+            }
+            root.style.width  = w + 'px';
+            root.style.height = h + 'px';
+        }
+        resize();
+        window.addEventListener('resize', resize);
+    })();
 
     // ── Carga inicial: desde URL param o postMessage ─────────────────────────
     (async () => {

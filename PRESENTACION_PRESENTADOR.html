@@ -307,6 +307,79 @@
         }
         .btn-projector:hover { background: var(--bg-tertiary); }
 
+        /* ── Selector de formato ── */
+        .formato-row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 8px 12px 4px;
+        }
+        .btn-formato {
+            padding: 5px 11px;
+            border-radius: var(--radius-full);
+            border: 1.5px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .btn-formato:hover { border-color: var(--airbnb-red); color: var(--airbnb-red); }
+        .btn-formato.active {
+            background: var(--airbnb-red);
+            border-color: var(--airbnb-red);
+            color: #fff;
+        }
+
+        /* ── Overlay captura móvil ── */
+        #capturaOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #capturaOverlay.visible { display: flex; }
+        #capturaOverlay iframe {
+            border: none;
+            background: #000;
+        }
+        #capturaCerrar {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.18);
+            color: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+        #capturaLabel {
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            pointer-events: none;
+        }
+
         /* Panel derecho */
         .right-panel {
             width: 320px;
@@ -1179,11 +1252,24 @@
             <div class="slide-title" id="currentTitle">—</div>
             <div class="slide-counter">Slide <span id="currentNum">0</span> de <span id="totalNum">0</span></div>
         </div>
+        <div class="formato-row">
+            <button class="btn-formato active" data-formato="16:9" onclick="setFormato(this)" title="Proyector / Pantalla ancha">📺 16:9</button>
+            <button class="btn-formato" data-formato="9:16" onclick="setFormato(this)" title="TikTok · Reels · Shorts">📱 9:16</button>
+            <button class="btn-formato" data-formato="1:1" onclick="setFormato(this)" title="Instagram Post">⬜ 1:1</button>
+            <button class="btn-formato" data-formato="4:5" onclick="setFormato(this)" title="Instagram Portrait">🖼 4:5</button>
+        </div>
         <div class="nav-controls">
             <button class="btn-nav" onclick="prevSlide()">◀ Anterior</button>
             <button class="btn-nav" onclick="nextSlide()">Siguiente ▶</button>
             <button class="btn-projector" onclick="abrirProyector()">📺 Proyector</button>
         </div>
+    </div>
+
+    <!-- Overlay de captura para móvil -->
+    <div id="capturaOverlay">
+        <button id="capturaCerrar" onclick="cerrarCaptura()" title="Salir">✕</button>
+        <iframe id="capturaFrame" src="viewer.html"></iframe>
+        <span id="capturaLabel">Graba tu pantalla para compartir</span>
     </div>
 
     <!-- Panel derecho -->
@@ -1433,7 +1519,7 @@
             </div>
             <div class="field-group">
                 <label>Tema / descripción detallada</label>
-                <textarea id="iaTema" rows="4" placeholder="Ej: Presentación sobre el Censo DANE 2018 con datos de población y vivienda. Estilo profesional, 10 slides."></textarea>
+                <textarea id="iaTema" rows="4" placeholder="Ej: Presentación sobre inteligencia artificial y su impacto en la educación. Estilo moderno, 10 slides."></textarea>
             </div>
             <div id="iaStatusMsg" style="display:none; padding:12px 16px; border-radius:var(--radius-md); font-size:0.85rem; font-weight:500;"></div>
         </div>
@@ -1511,6 +1597,7 @@ function uid() { return Date.now().toString(36) + Math.random().toString(36).sli
 let currentPres    = null;   // presentación activa { id, name, slides }
 let currentIndex   = 0;
 let projectorWin   = null;
+let currentFormato = '16:9'; // formato activo del proyector
 
 // ═══════════════════════════════════════════════════════════════════
 // Carga y render de presentación
@@ -1547,6 +1634,11 @@ function loadPresentacion(pres) {
 function sendToViewers(msg) {
     try { document.getElementById('slideFrame').contentWindow.postMessage(msg, '*'); } catch(e){}
     if (projectorWin && !projectorWin.closed) projectorWin.postMessage(msg, '*');
+    // Sincronizar overlay de captura móvil si está visible
+    const overlay = document.getElementById('capturaOverlay');
+    if (overlay && overlay.classList.contains('visible')) {
+        try { document.getElementById('capturaFrame').contentWindow.postMessage(msg, '*'); } catch(e){}
+    }
 }
 
 function updateUI() {
@@ -1660,25 +1752,124 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevSlide();
 });
 
-function abrirProyector() {
-    if (!currentPres) { alert('Carga una presentación primero.'); return; }
-    let viewerSrc = currentPres.viewer || 'viewer.html';
+// ── Formato del proyector ────────────────────────────────────────────────────
+const FORMATOS = {
+    '16:9': { w: 1280, h: 720  },
+    '9:16': { w: 450,  h: 800  },
+    '1:1':  { w: 700,  h: 700  },
+    '4:5':  { w: 600,  h: 750  },
+};
+
+function setFormato(btn) {
+    currentFormato = btn.dataset.formato;
+    document.querySelectorAll('.btn-formato').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // Actualizar label del botón proyector
+    const isSocial = currentFormato !== '16:9';
+    const btnProyector = document.querySelector('.btn-projector');
+    btnProyector.textContent = isSocial ? '📱 Capturar' : '📺 Proyector';
+}
+
+function isMobile() {
+    return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
+}
+
+function getViewerSrc() {
+    if (!currentPres) return 'viewer.html';
     if (currentPres.viewerHtml) {
         const blob = new Blob([currentPres.viewerHtml], { type: 'text/html' });
-        viewerSrc = URL.createObjectURL(blob);
+        return URL.createObjectURL(blob);
     }
-    projectorWin = window.open(viewerSrc, 'proyector', 'width=1280,height=720');
+    return currentPres.viewer || 'viewer.html';
+}
+
+function abrirProyector() {
+    if (!currentPres) { alert('Carga una presentación primero.'); return; }
+
+    const isSocial = currentFormato !== '16:9';
+
+    // Móvil con formato social → overlay en página
+    if (isMobile() && isSocial) {
+        abrirCapturaMovil();
+        return;
+    }
+
+    const dim = FORMATOS[currentFormato] || FORMATOS['16:9'];
+    const formatoParam = currentFormato !== '16:9' ? `?formato=${encodeURIComponent(currentFormato)}` : '';
+    let viewerSrc = getViewerSrc();
+
+    // Para viewers que no son blob, agregar el param de formato
+    if (!viewerSrc.startsWith('blob:') && formatoParam) {
+        viewerSrc += formatoParam;
+    }
+
+    // +60px compensa la barra "Compartiendo esta pestaña" de Chrome (~60px)
+    // para que el contenido siga teniendo las proporciones exactas del formato.
+    const SHARING_BAR_H = 60;
+    projectorWin = window.open(viewerSrc, 'proyector', `width=${dim.w},height=${dim.h + SHARING_BAR_H},resizable=yes`);
 
     const sendAll = () => {
         projectorWin.postMessage({ action:'load', slides:currentPres.slides, index:currentIndex }, '*');
         if (cameraEnabled && cameraStream) {
             projectorWin.postMessage({ action:'camera', enabled:true, pos:camPos, shape:camShape, size:camSize, mirror:camMirror }, '*');
         }
+        // Poner el nombre de la presentación como título de la pestaña/ventana
+        try { projectorWin.document.title = '▶ ' + currentPres.name + ' ← compartir esta'; } catch(e){}
     };
 
     projectorWin.addEventListener('load', sendAll);
-    // fallback — el evento load a veces no dispara en ventanas cross-origin
     setTimeout(sendAll, 1200);
+}
+
+// ── Captura móvil ────────────────────────────────────────────────────────────
+function abrirCapturaMovil() {
+    const overlay = document.getElementById('capturaOverlay');
+    const frame   = document.getElementById('capturaFrame');
+
+    // Calcular dimensiones del iframe dentro del overlay
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const [rw, rh] = currentFormato.split(':').map(Number);
+
+    let fw, fh;
+    if (vw / vh > rw / rh) {
+        fh = vh;
+        fw = Math.round(vh * rw / rh);
+    } else {
+        fw = vw;
+        fh = Math.round(vw * rh / rw);
+    }
+
+    frame.style.width  = fw + 'px';
+    frame.style.height = fh + 'px';
+
+    const formatoParam = `?formato=${encodeURIComponent(currentFormato)}`;
+    let viewerSrc = getViewerSrc();
+    if (!viewerSrc.startsWith('blob:')) viewerSrc += formatoParam;
+
+    frame.src = viewerSrc;
+    frame.onload = () => {
+        frame.contentWindow.postMessage(
+            { action:'load', slides:currentPres.slides, index:currentIndex }, '*'
+        );
+    };
+    setTimeout(() => {
+        frame.contentWindow?.postMessage(
+            { action:'load', slides:currentPres.slides, index:currentIndex }, '*'
+        );
+    }, 1000);
+
+    overlay.classList.add('visible');
+    // Bloquear scroll del body
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarCaptura() {
+    const overlay = document.getElementById('capturaOverlay');
+    const frame   = document.getElementById('capturaFrame');
+    overlay.classList.remove('visible');
+    frame.src = 'viewer.html';
+    document.body.style.overflow = '';
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -3211,10 +3402,12 @@ async function browserStartRec() {
     }
 
     // 2. Captura de pantalla
+    // displaySurface:'browser' muestra pestañas primero — al compartir una pestaña
+    // el navegador captura solo el contenido, sin barra de dirección ni bordes.
     let captureStream;
     try {
         captureStream = await navigator.mediaDevices.getDisplayMedia({
-            video: { frameRate: qual.fps, displaySurface: 'window' },
+            video: { frameRate: qual.fps, displaySurface: 'browser' },
             audio: true,
         });
     } catch(err) {
