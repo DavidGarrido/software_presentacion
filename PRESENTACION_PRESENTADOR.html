@@ -3451,10 +3451,21 @@ async function browserStartRec() {
         await camVid.play();
     }
 
-    // 5. OPFS — escribe chunks directo al disco sin acumular en RAM
+    // 5. Codec — mp4 si el navegador lo soporta, webm como fallback
+    const mimeType = [
+        'video/mp4;codecs=avc1,mp4a.40.2',
+        'video/mp4;codecs=avc1',
+        'video/mp4',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm'
+    ].find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+
+    // 6. OPFS — escribe chunks directo al disco sin acumular en RAM
     const recName = (currentPres?.name || 'grabacion') + '_'
                   + new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
-    _opfsFileName = recName + '.webm';
+    const recExt  = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
+    _opfsFileName = recName + '.' + recExt;
     try {
         const root    = await navigator.storage.getDirectory();
         const fh      = await root.getFileHandle(_opfsFileName, { create: true });
@@ -3464,7 +3475,7 @@ async function browserStartRec() {
         _opfsWritable = null;
     }
 
-    // 6. rAF throttled al fps objetivo — dibuja solo cuando toca, sin drift
+    // 7. rAF throttled al fps objetivo — dibuja solo cuando toca, sin drift
     const frameDur = 1000 / qual.fps;
     let lastDraw   = 0;
     function drawFrame(now) {
@@ -3477,15 +3488,12 @@ async function browserStartRec() {
     }
     _rafId = requestAnimationFrame(drawFrame);
 
-    // 7. Stream final: canvas (video) + AudioContext (audio mezclado)
+    // 8. Stream final: canvas (video) + AudioContext (audio mezclado)
     //    MediaRecorder sincroniza A/V automáticamente al estar en el mismo stream
     const finalStream = new MediaStream([
         canvas.captureStream(qual.fps).getVideoTracks()[0],
         ...dest.stream.getAudioTracks(),
     ]);
-
-    const mimeType = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
-        .find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
 
     const recChunks = [];
     _mediaRecorder = new MediaRecorder(finalStream, { mimeType, videoBitsPerSecond: qual.bps });
@@ -3546,7 +3554,8 @@ async function browserStartRec() {
     document.getElementById('browserRecBtn').textContent = '⏺ Grabando…';
     document.getElementById('browserRecBtn').classList.add('recording');
     document.getElementById('browserStopBtn').disabled = false;
-    document.getElementById('recStatus').textContent = cameraEnabled ? '🔴 Grabando + 📷' : '🔴 Grabando';
+    const fmtLabel = mimeType.startsWith('video/mp4') ? 'MP4' : 'WEBM';
+    document.getElementById('recStatus').textContent = (cameraEnabled ? '🔴 Grabando + 📷' : '🔴 Grabando') + ' · ' + fmtLabel;
     document.getElementById('recStatus').className   = 'badge rec';
 
     captureStream.getVideoTracks()[0].addEventListener('ended', () => browserStopRec());
