@@ -1220,9 +1220,11 @@
     </div>
     <div class="top-bar-right">
         <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
-            <span class="moon-icon">🌙</span>
+            <span class="moon-icon">🌓</span>
             <span class="sun-icon">☀️</span>
         </button>
+        <button class="top-btn" onclick="exportarImagenes()" title="Exportar slides como imágenes">🖼️ Exportar</button>
+        <button class="top-btn" onclick="exportarRango()" title="Exportar rango de slides">📊 Exportar rango</button>
         <button class="top-btn" onclick="openModal('modalPresentaciones')">📂 Presentaciones</button>
     </div>
 </div>
@@ -1506,17 +1508,42 @@
         <div class="modal-body" style="flex-direction:column; gap:16px; padding:24px;">
             <div class="field-group">
                 <label>Proveedor de IA</label>
-                <select id="iaProvider">
+                <select id="iaProvider" onchange="actualizarHintIA()">
                     <option value="gemini">Google Gemini (gratuito)</option>
-                    <option value="deepseek">DeepSeek</option>
+                    <option value="deepseek">DeepSeek (Ruta Biblia - Sin Key)</option>
                     <option value="openai">OpenAI</option>
                 </select>
             </div>
             <div class="field-group">
                 <label>API Key</label>
                 <input type="password" id="iaApiKey" placeholder="Pega tu API key aquí...">
-                <span style="font-size:0.7rem; color:var(--text-muted); margin-top:4px; display:block;">Tu llave se guarda localmente en el navegador.</span>
+                <span id="iaKeyHint" style="font-size:0.7rem; color:var(--text-muted); margin-top:4px; display:block;">Tu llave se guarda localmente en el navegador.</span>
             </div>
+            <script>
+                function actualizarHintIA() {
+                    const p = document.getElementById('iaProvider').value;
+                    const h = document.getElementById('iaKeyHint');
+                    if (p === 'deepseek') {
+                        h.textContent = '✅ DeepSeek está pre-configurado vía proxy. No necesitas poner nada aquí.';
+                        h.style.color = '#4ade80';
+                    } else {
+                        h.textContent = 'Tu llave se guarda localmente en el navegador.';
+                        h.style.color = '';
+                    }
+                }
+                // Inicializar hint al abrir modal
+                document.addEventListener('DOMContentLoaded', () => {
+                    const observer = new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            if (mutation.target.id === 'modalIA' && !mutation.target.classList.contains('hidden')) {
+                                actualizarHintIA();
+                            }
+                        });
+                    });
+                    const modal = document.getElementById('modalIA');
+                    if (modal) observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+                });
+            </script>
             <div class="field-group">
                 <label>Tema / descripción detallada</label>
                 <textarea id="iaTema" rows="4" placeholder="Ej: Presentación sobre inteligencia artificial y su impacto en la educación. Estilo moderno, 10 slides."></textarea>
@@ -1727,6 +1754,243 @@ function renderThumbs() {
         observer.observe(ifrm);
     });
 }
+
+// ── Exportar imágenes ────────────────────────────────────────────────────────────
+async function exportarImagenes(rangoStart, rangoEnd) {
+    if (!currentPres || !currentPres.slides || currentPres.slides.length === 0) {
+        alert('No hay presentación cargada');
+        return;
+    }
+
+    const total = currentPres.slides.length;
+    const start = rangoStart || 1;
+    const end = rangoEnd || total;
+
+    const btn = event?.target || document.querySelector('button[onclick="exportarImagenes()"]');
+    const originalText = btn ? btn.innerHTML : 'Exportar';
+    if (btn) {
+        btn.innerHTML = '⏳ Exportando...';
+        btn.disabled = true;
+    }
+
+    try {
+        const zip = new JSZip();
+        const formatoParts = currentFormato.split(':');
+        const rw = parseInt(formatoParts[0]);
+        const rh = parseInt(formatoParts[1]);
+
+        // Base de alta resolución (mínimo 1080p en el lado más corto)
+        let width, height;
+        const baseRes = 1080;
+        if (rw >= rh) {
+            height = baseRes;
+            width = Math.round(baseRes * (rw / rh));
+        } else {
+            width = baseRes;
+            height = Math.round(baseRes * (rh / rw));
+        }
+        
+        const slides = currentPres.slides;
+
+        // Cargar html2canvas
+        await new Promise((resolve, reject) => {
+            if (window.html2canvas) { resolve(); return; }
+            const script = document.createElement('script');
+            script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+
+        // Determinar URL del viewer
+        let viewerSrc = 'viewer.html';
+        let blobUrl = null;
+        if (currentPres.viewerHtml) {
+            const blob = new Blob([currentPres.viewerHtml], { type: 'text/html' });
+            blobUrl = URL.createObjectURL(blob);
+            viewerSrc = blobUrl;
+        } else if (currentPres.viewer) {
+            viewerSrc = currentPres.viewer;
+        }
+
+        const ifrm = document.createElement('iframe');
+        ifrm.style.cssText = `position:fixed;left:-9999px;top:-9999px;width:${width}px;height:${height}px;border:none;background:#000;`;
+        
+        let finalSrc = viewerSrc;
+        if (!viewerSrc.startsWith('blob:')) {
+            finalSrc += (viewerSrc.includes('?') ? '&' : '?') + 'formato=' + encodeURIComponent(currentFormato);
+        }
+        ifrm.src = finalSrc;
+        document.body.appendChild(ifrm);
+
+        // Esperar carga inicial del viewer
+        await new Promise(r => setTimeout(r, 2000));
+
+        const win = ifrm.contentWindow;
+        const doc = ifrm.contentDocument;
+
+        let exportedCount = 0;
+        for (let i = start - 1; i < end; i++) {
+            exportedCount++;
+            if (btn) btn.innerHTML = `⏳ ${exportedCount}/${end - start + 1}`;
+
+            // Enviar slide al viewer
+            win.postMessage({ action: 'load', slides: slides, index: i }, '*');
+            
+            // Tiempo base para transiciones
+            await new Promise(r => setTimeout(r, 800));
+
+            try {
+                // Esperar a que las fuentes estén listas
+                if (win.document.fonts) await win.document.fonts.ready;
+                
+                // Esperar a que todas las imágenes del slide hayan cargado
+                const imgs = Array.from(doc.querySelectorAll('img'));
+                await Promise.all(imgs.map(img => {
+                    if (img.complete) return Promise.resolve();
+                    return new Promise(r => { 
+                        img.onload = r; 
+                        img.onerror = r;
+                        // Timeout de seguridad para imágenes que no cargan
+                        setTimeout(r, 3000);
+                    });
+                }));
+
+                // Preparar para la captura
+                doc.body.classList.remove('letterbox');
+                doc.documentElement.style.width = width + 'px';
+                doc.documentElement.style.height = height + 'px';
+                doc.body.style.width = width + 'px';
+                doc.body.style.height = height + 'px';
+                doc.body.style.margin = '0';
+                doc.body.style.overflow = 'hidden';
+
+                const rootEl = doc.getElementById('root') || doc.body;
+                rootEl.style.width = width + 'px';
+                rootEl.style.height = height + 'px';
+                rootEl.style.position = 'relative';
+
+                const canvas = await html2canvas(rootEl, {
+                    width: width,
+                    height: height,
+                    scale: 1, // Mantener dimensiones exactas (ej: 1920x1080)
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: doc.body.style.background || '#000',
+                    logging: false,
+                    windowWidth: width,
+                    windowHeight: height,
+                    onclone: (clonedDoc) => {
+                        const clonedRoot = clonedDoc.getElementById('root') || clonedDoc.body;
+                        clonedRoot.style.width = width + 'px';
+                        clonedRoot.style.height = height + 'px';
+                        clonedRoot.style.display = 'block';
+                        clonedRoot.style.overflow = 'hidden';
+                        
+                        // Desactivar animaciones y transiciones para evitar ghosting
+                        const style = clonedDoc.createElement('style');
+                        style.innerHTML = `
+                            * { 
+                                transition: none !important; 
+                                animation: none !important; 
+                                /* Forzar a html2canvas a renderizar espacios correctamente */
+                                letter-spacing: 0.01px !important; 
+                                word-spacing: normal !important;
+                                font-variant-ligatures: none !important;
+                                text-rendering: optimizeLegibility !important;
+                            }
+                            /* 1. Ocultar todos los slides por defecto en el clon */
+                            .slide { 
+                                opacity: 0 !important; 
+                                visibility: hidden !important; 
+                                display: none !important;
+                            }
+                            /* 2. Mostrar SOLO el slide activo */
+                            .slide.active, .active { 
+                                opacity: 1 !important; 
+                                visibility: visible !important; 
+                                display: flex !important;
+                                transform: none !important;
+                            }
+                            /* Forzar renderizado de fuentes */
+                            body { 
+                                overflow: hidden !important; 
+                                -webkit-font-smoothing: antialiased;
+                                -moz-osx-font-smoothing: grayscale;
+                            }
+                            /* Corregir amontonamiento en subtítulos y párrafos */
+                            p, .cover-sub, .subtitle, h1, h2, h3 {
+                                line-height: 1.4 !important;
+                                transform: none !important;
+                                /* Pequeño truco para asegurar espacios */
+                                white-space: pre-wrap !important;
+                            }
+                        `;
+                        clonedDoc.head.appendChild(style);
+                    }
+                });
+
+                const imgData = canvas.toDataURL('image/png').split(',')[1];
+                zip.file('slide_' + String(i + 1).padStart(3, '0') + '.png', imgData, { base64: true });
+            } catch (e) {
+                console.warn('Error capturando slide', i, e);
+            }
+        }
+
+        if (blobUrl) URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(ifrm);
+
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filename = (currentPres.name || 'presentacion').replace(/\s+/g, '_');
+        a.download = `${filename}_slides_${start}-${end}.zip`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        if (btn) {
+            btn.innerHTML = '✅ ¡Listo!';
+            setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2500);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Error al exportar: ' + err.message);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+}
+
+// ── Exportar rango de imágenes ────────────────────────────────────────────────────
+function exportarRango() {
+    if (!currentPres || !currentPres.slides || currentPres.slides.length === 0) {
+        alert('No hay presentación cargada');
+        return;
+    }
+
+    const total = currentPres.slides.length;
+    var rango = prompt('Ingrese rango de slides (ej: 1-6). Total: ' + total, '1-' + total);
+    if (!rango) return;
+
+    var match = rango.match(/^(\d+)-(\d+)$/);
+    if (!match) {
+        alert('Formato inválido. Use: inicio-fin (ej: 1-6)');
+        return;
+    }
+
+    var start = parseInt(match[1]);
+    var end = parseInt(match[2]);
+
+    if (start < 1 || end > total || start > end) {
+        alert('Rango inválido. Debe ser entre 1 y ' + total);
+        return;
+    }
+
+    exportarImagenes(start, end);
+}
+
 
 function nextSlide() {
     if (!currentPres || currentIndex >= currentPres.slides.length - 1) return;
@@ -3789,7 +4053,7 @@ REGLAS OBLIGATORIAS — léelas completas antes de generar:
 
 9. Genera entre 8 y 12 slides. Primero: cover. Último: cover. Incluye al menos 1 highlight y 1 image.
 
-10. Responde SOLO el JSON.`;
+10. Responde con el objeto JSON. Puedes usar bloques de código markdown.`;
 
 async function generarConIA() {
     const provider = document.getElementById('iaProvider').value;
@@ -3797,7 +4061,7 @@ async function generarConIA() {
     const tema     = document.getElementById('iaTema').value.trim();
     const btn      = document.getElementById('iaBtnGenerar');
 
-    if (!apiKey) { iaSetStatus('error', 'Ingresa tu API key.'); return; }
+    if (!apiKey && provider !== 'deepseek') { iaSetStatus('error', 'Ingresa tu API key.'); return; }
     if (!tema)   { iaSetStatus('error', 'Describe el tema de la presentación.'); return; }
 
     iaGuardarConfig();
@@ -4022,10 +4286,26 @@ window.addEventListener('message',e=>{
 }
 
 function iaExtraerJSON(texto) {
+    console.log('Raw AI Response:', texto);
+    // 1. Intentar buscar bloque markdown ```json ... ```
     const match = texto.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    const raw = (match ? match[1] : texto).trim();
-    try { return JSON.parse(raw); } catch { return null; }
+    let raw = match ? match[1] : texto;
+    
+    // 2. Si falla o no es válido, buscar desde el primer '{' hasta el último '}'
+    try {
+        return JSON.parse(raw.trim());
+    } catch (e) {
+        const firstBrace = texto.indexOf('{');
+        const lastBrace = texto.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1) {
+            raw = texto.substring(firstBrace, lastBrace + 1);
+            try { return JSON.parse(raw); } catch (e2) { return null; }
+        }
+        return null;
+    }
 }
+
+const IA_WORKER_URL = 'https://procliup-quoter.www-davidalexander.workers.dev/bible';
 
 async function iaLlamarAPI(provider, apiKey, tema) {
     if (provider === 'gemini') {
@@ -4044,18 +4324,19 @@ async function iaLlamarAPI(provider, apiKey, tema) {
         return d.candidates[0].content.parts[0].text;
 
     } else if (provider === 'deepseek') {
-        const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        const res = await fetch(IA_WORKER_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: 'deepseek-chat',
-                messages: [{ role: 'system', content: IA_SYSTEM_PROMPT }, { role: 'user', content: tema }],
-                max_tokens: 8192, temperature: 0.7
+                messages: [
+                    { role: 'system', content: IA_SYSTEM_PROMPT },
+                    { role: 'user',   content: tema }
+                ]
             })
         });
         const d = await res.json();
-        if (d.error) throw new Error(d.error.message);
-        return d.choices[0].message.content;
+        if (!res.ok || d.error) throw new Error(d.error || 'Error del servidor IA');
+        return d.reply;
 
     } else {
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -4091,5 +4372,6 @@ function initTheme() {
 document.addEventListener('DOMContentLoaded', initTheme);
 initTheme(); // Ejecución inmediata para evitar parpadeo
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 </html>

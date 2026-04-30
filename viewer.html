@@ -427,11 +427,18 @@
         document.body.classList.toggle('fs-active', !!document.fullscreenElement);
     });
 
-    // Ocultar hint a los 4 segundos
+    // Ocultar hint a los 4 segundos o si estamos en un iframe
     setTimeout(() => {
         const hint = document.getElementById('fsHint');
-        if (hint) hint.classList.add('hidden');
+        if (hint) {
+            if (window.parent !== window.top) hint.style.display = 'none';
+            else hint.classList.add('hidden');
+        }
     }, 4000);
+    if (window.parent !== window.top) {
+        const hint = document.getElementById('fsHint');
+        if (hint) hint.style.display = 'none';
+    }
 
     // ── Letterbox para formatos sociales ────────────────────────────────────
     (function applyLetterbox() {
