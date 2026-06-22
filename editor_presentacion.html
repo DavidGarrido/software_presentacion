@@ -1213,21 +1213,43 @@
     }
 
     function extraerJSON(texto) {
-        console.log('Raw AI Response:', texto);
-        // 1. Intentar buscar bloque markdown ```json ... ```
-        const match = texto.match(/```(?:json)?\s*([\s\S]*?)```/i);
-        let raw = match ? match[1] : texto;
-        
-        // 2. Si falla o no es válido, buscar desde el primer '{' hasta el último '}'
+        console.log('Raw AI Response length:', texto.length);
+        let raw = texto;
+
+        // 1. Quitar bloque markdown (con o sin cierre)
+        raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '');
+
+        // 2. Buscar desde el primer '{' hasta el último '}'
+        const firstBrace = raw.indexOf('{');
+        const lastBrace = raw.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1) {
+            raw = raw.substring(firstBrace, lastBrace + 1);
+        }
+
+        // 3. Sanitizar: escapar saltos de línea literales dentro de strings
+        raw = raw.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, function(m) {
+            return m.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+        });
+
+        // 4. Compactar: unir líneas rotas, limpiar comas en objetos/arrays
+        raw = raw
+            .replace(/\n\s+/g, ' ')
+            .replace(/,\s*}/g, '}')
+            .replace(/,\s*]/g, ']');
+
+        // 5. Auto-cerrar llaves y corchetes faltantes (respuesta truncada)
+        const opens = (raw.match(/\{/g) || []).length;
+        const closes = (raw.match(/\}/g) || []).length;
+        const arrOpens = (raw.match(/\[/g) || []).length;
+        const arrCloses = (raw.match(/\]/g) || []).length;
+        raw += ']'.repeat(Math.max(0, arrOpens - arrCloses));
+        raw += '}'.repeat(Math.max(0, opens - closes));
+
+        // 6. Intentar parsear
         try {
-            return JSON.parse(raw.trim());
+            return JSON.parse(raw);
         } catch (e) {
-            const firstBrace = texto.indexOf('{');
-            const lastBrace = texto.lastIndexOf('}');
-            if (firstBrace !== -1 && lastBrace !== -1) {
-                raw = texto.substring(firstBrace, lastBrace + 1);
-                try { return JSON.parse(raw); } catch (e2) { return null; }
-            }
+            console.warn('JSON parse failed:', e.message);
             return null;
         }
     }
