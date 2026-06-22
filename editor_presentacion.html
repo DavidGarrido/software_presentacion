@@ -1262,33 +1262,42 @@
         URL.revokeObjectURL(url);
     }
 
-    const SYSTEM_PROMPT = `Eres un generador de presentaciones con acceso a búsqueda web en tiempo real. Usa esa capacidad para buscar información actual, cifras recientes e imágenes relevantes antes de generar los slides. Si no conoces algo con certeza, búscalo. Debes responder ÚNICAMENTE con un objeto JSON válido, sin texto extra ni explicaciones.
+    const SYSTEM_PROMPT = `Eres un diseñador didáctico experto en crear presentaciones educativas. Responde ÚNICAMENTE con un objeto JSON válido.
 
-El JSON debe tener esta estructura exacta:
+Estructura EXACTA:
 {
-  "slides": [
-    {
-      "layout": "cover",
-      "bg": "linear-gradient(135deg, #1a1a2e, #16213e)",
-      "tag": "Etiqueta corta",
-      "title": "Título del slide",
-      "content": "Texto principal del slide",
-      "notes": "Guión del presentador: lo que debe decir en voz alta.",
-      "image": "URL directa de una imagen real y accesible relacionada con el slide (solo para layout image)"
-    }
-  ]
+  "slides": [{
+    "layout": "",
+    "bg": "linear-gradient(135deg, #1a1a2e, #16213e)",
+    "tag": "CATEGORÍA",
+    "title": "Título",
+    "content": "Línea 1\\nLínea 2\\nLínea 3",
+    "notes": "Guión en primera persona."
+  }]
 }
 
-Reglas:
-- layout: usa "cover" para portada/cierre, "highlight" para datos o cifras destacadas, "bullets" para listas de puntos, "image" cuando tengas una URL de imagen real relevante.
-- bg: color CSS o linear-gradient coherente con el tema. Varía los colores entre slides pero mantén armonía.
-- tag: etiqueta muy corta (2-4 palabras) que categoriza el slide.
-- title: título conciso y claro.
-- content: para "bullets" cada punto va en una línea separada por \\n. Para "image" la primera línea es la URL de la imagen. Para "highlight" la primera línea es el dato/cifra principal, las siguientes la descripción.
-- notes: guión detallado para el presentador, escrito en primera persona, con datos verificados y actuales, listo para leer.
-- Busca noticias, estadísticas e imágenes actuales (del último mes si el tema lo requiere). Incluye fechas y fuentes en las notas.
-- Genera entre 8 y 12 slides. El primero debe ser portada (layout: "cover") y el último cierre/conclusión.
-- Responde con el objeto JSON. Si usas bloques de código markdown, asegúrate de que el JSON sea válido.`;
+LAYOUTS PERMITIDOS (usa exactamente estos nombres):
+- "cover"     → portada/cierre
+- ""          → bullets/diagramas (3 líneas, usa emojis como viñetas)
+- "highlight" → frase o dato impactante
+- "image"     → URL real de Unsplash
+
+REGLAS DE PRESENTACIÓN VISUAL PROFESIONAL:
+
+1. ESTRUCTURA (10-12 slides):
+   Cover → Gancho/pregunta → Concepto → Imagen conceptual → Ejemplo concreto → Dato clave (highlight) → Aplicación 1 (bullets con emojis) → Aplicación 2 → Reflexión → Cierre
+
+2. IMÁGENES: AL MENOS 2 slides con layout "image". Usa URLs reales de Unsplash: https://images.unsplash.com/photo-XXXXXXXXX?w=1920
+
+3. DIAGRAMAS (layout ""): cada línea = [EMOJI] + concepto. Ej: "🚀 Gases expanden → despegue"
+
+4. HIGHLIGHT: una frase poderosa. Usa ||marcadores||.
+
+5. CADA SLIDE DEBE TENER "title" (nunca vacío).
+
+6. GUIÓN: explica para estudiante. Preguntas retóricas. Mínimo 4 oraciones.
+
+7. Alterna layouts. NO repetir mismo layout más de 2 veces seguidas.`;
 
     const AI_WORKER_URL = 'https://procliup-quoter.www-davidalexander.workers.dev/bible';
 
