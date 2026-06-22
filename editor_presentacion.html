@@ -758,33 +758,6 @@
         </div>
         <div class="modal-body" style="max-height:70vh;">
             <div class="ia-form-group">
-                <label>Proveedor de IA</label>
-                <select id="iaProvider" onchange="actualizarHintIA()">
-                    <option value="gemini">Google Gemini (gratuito)</option>
-                    <option value="deepseek">DeepSeek (Ruta Biblia - Sin Key)</option>
-                    <option value="openai">OpenAI</option>
-                </select>
-            </div>
-            <div class="ia-form-group">
-                <label>API Key</label>
-                <input type="password" id="iaApiKey" placeholder="Pega tu API key aqu&#xed;...">
-                <span id="iaKeyHint" style="font-size:0.7rem; color:var(--text-muted); margin-top:4px; display:block;"></span>
-            </div>
-            <script>
-                function actualizarHintIA() {
-                    const p = document.getElementById('iaProvider').value;
-                    const h = document.getElementById('iaKeyHint');
-                    if (p === 'deepseek') {
-                        h.textContent = '✅ DeepSeek está pre-configurado vía proxy. No necesitas poner nada aquí.';
-                        h.style.color = '#4ade80';
-                    } else {
-                        h.textContent = 'Tu llave se guarda localmente en el navegador.';
-                        h.style.color = '';
-                    }
-                }
-                setTimeout(actualizarHintIA, 100);
-            </script>
-            <div class="ia-form-group">
                 <label>Tema / descripci&#xf3;n de la presentaci&#xf3;n</label>
                 <textarea id="iaTema" placeholder="Ej: Presentación sobre inteligencia artificial y su impacto en la educación. Estilo profesional, 8 slides."></textarea>
             </div>
@@ -1182,19 +1155,16 @@
     document.getElementById('iaModalCancel').addEventListener('click', () => iaModal.classList.remove('open'));
 
     iaGenerarBtn.addEventListener('click', async () => {
-        const provider = document.getElementById('iaProvider').value;
-        const apiKey   = document.getElementById('iaApiKey').value.trim();
         const tema     = document.getElementById('iaTema').value.trim();
         const nombre   = document.getElementById('iaNombre').value.trim() || 'Mi Presentación';
 
-        if (!apiKey && provider !== 'deepseek') { mostrarEstadoIA('error', 'Ingresa tu API key.'); return; }
         if (!tema)   { mostrarEstadoIA('error', 'Describe el tema de la presentación.'); return; }
 
         iaGenerarBtn.disabled = true;
         mostrarEstadoIA('loading', '<span class="spinner"></span>Generando slides con IA…');
 
         try {
-            const texto = await llamarIA(provider, apiKey, tema);
+            const texto = await llamarIA(tema);
             const json  = extraerJSON(texto);
 
             if (!json || !Array.isArray(json.slides)) {
@@ -1300,57 +1270,20 @@ Reglas:
 
     const AI_WORKER_URL = 'https://procliup-quoter.www-davidalexander.workers.dev/bible';
 
-    async function llamarIA(provider, apiKey, tema) {
-        if (provider === 'gemini') {
-            const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-            const res = await fetch(endpoint + '?key=' + apiKey, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-                    contents: [{ parts: [{ text: tema }] }],
-                    tools: [{ googleSearch: {} }],
-                    generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
-                })
-            });
-            const data = await res.json();
-            if (data.error) throw new Error(data.error.message);
-            return data.candidates[0].content.parts[0].text;
-
-        } else if (provider === 'deepseek') {
-            const res = await fetch(AI_WORKER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    messages: [
-                        { role: 'system', content: SYSTEM_PROMPT },
-                        { role: 'user',   content: tema }
-                    ]
-                })
-            });
-            const data = await res.json();
-            if (!res.ok || data.error) throw new Error(data.error || 'Error del servidor IA');
-            return data.reply;
-
-        } else {
-            // OpenAI
-            const res = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-                body: JSON.stringify({
-                    model: 'gpt-4o-mini',
-                    messages: [
-                        { role: 'system', content: SYSTEM_PROMPT },
-                        { role: 'user',   content: tema }
-                    ],
-                    max_tokens: 4096,
-                    temperature: 0.7
-                })
-            });
-            const data = await res.json();
-            if (data.error) throw new Error(data.error.message);
-            return data.choices[0].message.content;
-        }
+    async function llamarIA(tema) {
+        const res = await fetch(AI_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [
+                    { role: 'system', content: SYSTEM_PROMPT },
+                    { role: 'user',   content: tema }
+                ]
+            })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || 'Error del servidor IA');
+        return data.reply;
     }
 </script>
 

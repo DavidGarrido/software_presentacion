@@ -1507,44 +1507,6 @@
         </div>
         <div class="modal-body" style="flex-direction:column; gap:16px; padding:24px;">
             <div class="field-group">
-                <label>Proveedor de IA</label>
-                <select id="iaProvider" onchange="actualizarHintIA()">
-                    <option value="gemini">Google Gemini (gratuito)</option>
-                    <option value="deepseek">DeepSeek (Ruta Biblia - Sin Key)</option>
-                    <option value="openai">OpenAI</option>
-                </select>
-            </div>
-            <div class="field-group">
-                <label>API Key</label>
-                <input type="password" id="iaApiKey" placeholder="Pega tu API key aquí...">
-                <span id="iaKeyHint" style="font-size:0.7rem; color:var(--text-muted); margin-top:4px; display:block;">Tu llave se guarda localmente en el navegador.</span>
-            </div>
-            <script>
-                function actualizarHintIA() {
-                    const p = document.getElementById('iaProvider').value;
-                    const h = document.getElementById('iaKeyHint');
-                    if (p === 'deepseek') {
-                        h.textContent = '✅ DeepSeek está pre-configurado vía proxy. No necesitas poner nada aquí.';
-                        h.style.color = '#4ade80';
-                    } else {
-                        h.textContent = 'Tu llave se guarda localmente en el navegador.';
-                        h.style.color = '';
-                    }
-                }
-                // Inicializar hint al abrir modal
-                document.addEventListener('DOMContentLoaded', () => {
-                    const observer = new MutationObserver((mutations) => {
-                        mutations.forEach((mutation) => {
-                            if (mutation.target.id === 'modalIA' && !mutation.target.classList.contains('hidden')) {
-                                actualizarHintIA();
-                            }
-                        });
-                    });
-                    const modal = document.getElementById('modalIA');
-                    if (modal) observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
-                });
-            </script>
-            <div class="field-group">
                 <label>Tema / descripción detallada</label>
                 <textarea id="iaTema" rows="4" placeholder="Ej: Presentación sobre inteligencia artificial y su impacto en la educación. Estilo moderno, 10 slides."></textarea>
             </div>
@@ -3979,19 +3941,8 @@ async function pearAction(action) {
 // ═══════════════════════════════════════════════════════════════════
 
 function abrirModalIA() {
-    // Restaurar proveedor y API key guardados
-    const saved = JSON.parse(localStorage.getItem('ia_config') || '{}');
-    if (saved.provider) document.getElementById('iaProvider').value = saved.provider;
-    if (saved.apiKey)   document.getElementById('iaApiKey').value   = saved.apiKey;
     document.getElementById('iaStatusMsg').style.display = 'none';
     document.getElementById('modalIA').classList.remove('hidden');
-}
-
-function iaGuardarConfig() {
-    localStorage.setItem('ia_config', JSON.stringify({
-        provider: document.getElementById('iaProvider').value,
-        apiKey:   document.getElementById('iaApiKey').value.trim()
-    }));
 }
 
 function iaSetStatus(tipo, html) {
@@ -4056,15 +4007,11 @@ REGLAS OBLIGATORIAS — léelas completas antes de generar:
 10. Responde con el objeto JSON. Puedes usar bloques de código markdown.`;
 
 async function generarConIA() {
-    const provider = document.getElementById('iaProvider').value;
-    const apiKey   = document.getElementById('iaApiKey').value.trim();
     const tema     = document.getElementById('iaTema').value.trim();
     const btn      = document.getElementById('iaBtnGenerar');
 
-    if (!apiKey && provider !== 'deepseek') { iaSetStatus('error', 'Ingresa tu API key.'); return; }
     if (!tema)   { iaSetStatus('error', 'Describe el tema de la presentación.'); return; }
 
-    iaGuardarConfig();
     btn.disabled = true;
     iaSetStatus('loading', '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(167,139,250,0.3);border-top-color:#a78bfa;border-radius:50%;animation:iaSpin 0.8s linear infinite;margin-right:8px;vertical-align:middle;"></span>Generando con IA…');
 
@@ -4076,7 +4023,7 @@ async function generarConIA() {
     }
 
     try {
-        const texto = await iaLlamarAPI(provider, apiKey, tema);
+        const texto = await iaLlamarAPI(tema);
         const obj   = iaExtraerJSON(texto);
 
         if (!obj || !Array.isArray(obj.slides) || !obj.slides.length) {
@@ -4307,51 +4254,20 @@ function iaExtraerJSON(texto) {
 
 const IA_WORKER_URL = 'https://procliup-quoter.www-davidalexander.workers.dev/bible';
 
-async function iaLlamarAPI(provider, apiKey, tema) {
-    if (provider === 'gemini') {
-        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                systemInstruction: { parts: [{ text: IA_SYSTEM_PROMPT }] },
-                contents: [{ parts: [{ text: tema }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
-            })
-        });
-        const d = await res.json();
-        if (d.error) throw new Error(d.error.message);
-        return d.candidates[0].content.parts[0].text;
-
-    } else if (provider === 'deepseek') {
-        const res = await fetch(IA_WORKER_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                messages: [
-                    { role: 'system', content: IA_SYSTEM_PROMPT },
-                    { role: 'user',   content: tema }
-                ]
-            })
-        });
-        const d = await res.json();
-        if (!res.ok || d.error) throw new Error(d.error || 'Error del servidor IA');
-        return d.reply;
-
-    } else {
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-            body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: [{ role: 'system', content: IA_SYSTEM_PROMPT }, { role: 'user', content: tema }],
-                max_tokens: 8192, temperature: 0.7
-            })
-        });
-        const d = await res.json();
-        if (d.error) throw new Error(d.error.message);
-        return d.choices[0].message.content;
-    }
+async function iaLlamarAPI(tema) {
+    const res = await fetch(IA_WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            messages: [
+                { role: 'system', content: IA_SYSTEM_PROMPT },
+                { role: 'user',   content: tema }
+            ]
+        })
+    });
+    const d = await res.json();
+    if (!res.ok || d.error) throw new Error(d.error || 'Error del servidor IA');
+    return d.reply;
 }
 
 // ── Tema Claro/Oscuro ──────────────────────────────────────────────────────────
